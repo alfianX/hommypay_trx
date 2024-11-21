@@ -1,0 +1,14 @@
+[14:33:56] - Send to microservice: Send to host: read tcp 127.0.0.1:55493->127.0.0.1:4568: i/o timeout
+
+[14:36:47] - Send to microservice: Send to host: read tcp 127.0.0.1:55528->127.0.0.1:4567: i/o timeout
+
+[14:37:56] - request timeout
+
+[14:42:50] - request timeout
+
+[14:46:16] - request timeout
+
+[15:45:47] - Save data reversal: parsing time "2024-11-11 15:45:11" as "2006-01-0215:04:05": cannot parse " 15:45:11" as "15"
+
+[15:47:34] - request timeout
+

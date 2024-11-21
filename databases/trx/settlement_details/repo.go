@@ -1,0 +1,56 @@
+package settlementdetails
+
+import (
+	"context"
+
+	"gorm.io/gorm"
+)
+
+type Repo struct {
+	Db *gorm.DB
+}
+
+func NewRepo(db *gorm.DB) Repo {
+	return Repo{Db: db}
+}
+
+func (r Repo) CreateSettleDetail(ctx context.Context, entity *SettlementDetails) error {
+	result := r.Db.WithContext(ctx).Select(
+		"settlement_id",
+		"transaction_id",
+		"transaction_type",
+		"procode",
+		"mid",
+		"tid",
+		"card_type",
+		"pan",
+		"pan_enc",
+		"track_data",
+		"emv_tag",
+		"amount",
+		"transaction_date",
+		"stan",
+		"stan_issuer",
+		"rrn",
+		"trace",
+		"trans_mode",
+		"iso_request",
+		"iso_request_issuer",
+		"response_code",
+		"response_at",
+		"approval_code",
+		"reff_id",
+		"DE32",
+		"DE33",
+		"DE123",
+		"iso_response",
+		"iso_response_issuer",
+		"issuer_id",
+		"status",
+		"void_id",
+		"cut_off",
+		"created_at",
+	).Create(&entity)
+
+	return result.Error
+}

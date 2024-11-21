@@ -1,0 +1,30 @@
+[09:45:06] - Check data reversal: record not found
+
+[09:58:36] - request timeout
+
+[11:34:54] - Check TID MID: Error 1146 (42S02): Table 'hommypay_param.terminals' doesn't exist
+
+[11:48:44] - Key: 'SaleRequest.PaymentInformation.Procode' Error:Field validation for 'Procode' failed on the 'len' tag
+
+[11:49:27] - Key: 'SaleRequest.PaymentInformation.Procode' Error:Field validation for 'Procode' failed on the 'min' tag
+
+[13:25:32] - Key: 'SaleRequest.PaymentInformation.Procode' Error:Field validation for 'Procode' failed on the 'min' tag
+
+[13:30:09] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:61201->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[13:30:35] - Key: 'SaleRequest.PaymentInformation.Procode' Error:Field validation for 'Procode' failed on the 'max' tag
+
+[13:31:27] - Key: 'SaleRequest.PaymentInformation.Procode' Error:Field validation for 'Procode' failed on the 'numeric' tag
+
+[13:37:49] - parsing time "2024-11-12 13:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse " 13:37:11" as "T"
+
+[13:44:32] - parsing time "2024-11-12 13:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse " 13:37:11" as "T"
+
+[13:46:59] - parsing time "2024-11-12 13:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse " 13:37:11" as "T"
+
+[13:49:00] - parsing time "2024-11-12 13:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse " 13:37:11" as "T"
+
+[13:50:10] - parsing time "2024-11-12 13:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse " 13:37:11" as "T"
+
+[13:53:59] - Cron - Unmarshal data request : parsing time "2024-11-1213:37:11" as "2006-01-02T15:04:05Z07:00": cannot parse "13:37:11" as "T"
+

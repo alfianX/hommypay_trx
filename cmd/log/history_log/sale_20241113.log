@@ -1,0 +1,15 @@
+
+ respondStatus: 400, respondBody: {"Message":[{"field":"Batch","message":"Min is 6"},{"field":"TrackData2","message":"This field is required"}],"ResponseCode":"I6","status":"INVALID_REQUEST"}
+
+ respondStatus: 400, respondBody: {"status":"INVALID_REQUEST","responseCode":"I6","message":"TID MID not found!"}
+
+ respondStatus: 400, respondBody: {"status":"INVALID_REQUEST","responseCode":"I7","message":"Card not registered!"}
+[09:19:16] - path:/sale, method: POST,
+ requestBody: {"paymentInformation":{"procode":"000000","tid":"60230000","mid":"824020000000064","amount":300,"tip":0,"stan":"000031","trace":"000019","batch":"000001","transactionDate":"2024-11-1210:20:24","ksn":"FFFF9876543210E00001"},"cardInformation":{"pan":"001061FF21E5888E9022","expiry":"000FF20A2109CEAD866B","trackData":"002061FF21E5888E9022A317934ED7436724","emvTag":"00FE484EF85E8ACB1441BDA14E5E97DB37220144FC418B33FB5AF4914FA8B26C010451C94635ABB3D177DF4217451C67DD42269B011603D195918932E716064A9ADCE1B4C41219E95F88094FA8742F0A9770FF835C3E638A812021567DF86265BB76AFDE27936F57213A442CF2E73ACE3C54B59BEDCFC109D5BAB4CD94035F043222","pinBlock":""},"posTerminal":{"transMode":"","code":"02","keyMode":1},"ISO8583":""}
+ respondStatus: 409, respondBody: {"status":"SERVER_FAILED","responseCode":"E6","message":"Service Malfunction"}
+[09:21:30] - path:/sale, method: POST,
+ requestBody: {"paymentInformation":{"procode":"000000","tid":"60230000","mid":"824020000000064","amount":300,"tip":0,"stan":"000031","trace":"000019","batch":"000001","transactionDate":"2024-11-1210:20:24","ksn":"FFFF9876543210E00001"},"cardInformation":{"pan":"001061FF21E5888E9022","expiry":"000FF20A2109CEAD866B","trackData":"002061FF21E5888E9022A317934ED7436724","emvTag":"00FE484EF85E8ACB1441BDA14E5E97DB37220144FC418B33FB5AF4914FA8B26C010451C94635ABB3D177DF4217451C67DD42269B011603D195918932E716064A9ADCE1B4C41219E95F88094FA8742F0A9770FF835C3E638A812021567DF86265BB76AFDE27936F57213A442CF2E73ACE3C54B59BEDCFC109D5BAB4CD94035F043222","pinBlock":""},"posTerminal":{"transMode":"","code":"02","keyMode":1},"ISO8583":""}
+ respondStatus: 409, respondBody: {"status":"TIMEOUT","responseCode":"T1","message":"request timeout"}
+[09:23:45] - path:/sale, method: POST,
+ requestBody: {"paymentInformation":{"procode":"000000","tid":"60230000","mid":"824020000000064","amount":300,"tip":0,"stan":"000031","trace":"000019","batch":"000001","transactionDate":"2024-11-1210:20:24","ksn":"FFFF9876543210E00001"},"cardInformation":{"pan":"001061FF21E5888E9022","expiry":"000FF20A2109CEAD866B","trackData":"002061FF21E5888E9022A317934ED7436724","emvTag":"00FE484EF85E8ACB1441BDA14E5E97DB37220144FC418B33FB5AF4914FA8B26C010451C94635ABB3D177DF4217451C67DD42269B011603D195918932E716064A9ADCE1B4C41219E95F88094FA8742F0A9770FF835C3E638A812021567DF86265BB76AFDE27936F57213A442CF2E73ACE3C54B59BEDCFC109D5BAB4CD94035F043222","pinBlock":""},"posTerminal":{"transMode":"","code":"02","keyMode":1},"ISO8583":""}
+ respondStatus: 200, respondBody: {"approvalCode":"118654","reffID":"Order20241113022345453","responseCode":"00","status":"SUCCESS"}

@@ -1,0 +1,24 @@
+[13:20:36] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"00409BED2FC466029A022021B04472A54F7FCB3D7C1C908D8B743F6B28A4C11928BC"}
+[13:22:01] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040D9CBC83BDA0F9951F6A8DE0C7ECDA926193DBEDB5CB74D8855FB8598925561AB"}
+[13:22:20] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040D66DB7B6EC02EF079D7918327D4B8515B3B5F63818C99856F996E22CACA58FA4"}
+[13:23:23] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040462913B575F17D8B9E578FA59F3FEC34E8F3168B433A7E7A20028ACC52737B67"}
+[13:25:47] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040200F81545EC2D1475EB290B21D6316FC7B5B84E80CF8F663AFBC4775CEC6289A"}
+[13:40:12] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040B91D94F37353BA03EA24926D0CC7C2FEB71A2BBE79B8B84C3A1881163CD4E8E7"}
+[14:33:07] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"00402F9F5F62248626BD88B0CF6420E21B4EAE861F4C70C1B09ACDB87E3CD85C595B"}
+[14:43:21] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"600060006000600","tid":"60060005"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","key":"0040387AD1F23E1C36918A73E519BF539CB746D28667840F0BC55F79A541782345B1"}
