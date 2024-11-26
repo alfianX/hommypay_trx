@@ -162,7 +162,7 @@ func (s service) Void(c *gin.Context) {
 	if data.IssuerID == 99 {
 		if ISO8583 == "" {
 			// h.ErrorLog("ISO8583 empty!")
-			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I8", Message: "ISO8583 empty!"}, http.StatusBadRequest)
+			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 			return
 		}
 	}
@@ -190,7 +190,7 @@ func (s service) Void(c *gin.Context) {
 
 	if data.Trace != trace {
 		// h.ErrorLog("Trace not found!")
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I9", Message: "Trace not found!"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I8", Message: "Trace not found!"}, http.StatusBadRequest)
 		return
 	}
 
