@@ -2,15 +2,18 @@ package helper
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/alfianX/hommypay_trx/pkg/rsa"
 	"github.com/fir1/rest-api/pkg/erru"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -234,4 +237,34 @@ func HSMDecrypt(IPPORT string, zek string, data string) (string, error) {
 	}else{
 		return "", nil
 	}
+}
+
+func CreateSignature(tid, mid, email, transactionDate, trace, approvalCode string) (string, error) {
+	filename := "keys/rsa_private.key"
+	pem, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+    pemStr := string(pem)
+	privateKey, err := rsa.ParseRsaPrivateKeyFromPemStr(pemStr)
+	if err != nil {
+		return "", err
+	}
+
+	loc, _ := time.LoadLocation("Asia/Jakarta")
+	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", transactionDate, loc)
+	if err != nil {
+		return "", err
+	}
+	trxDateSig := trxDate.Format("20060102150405")
+
+	dataSignature := []byte(tid + mid + email + trxDateSig + approvalCode + trace)
+	signature, err := rsa.CreateSignature(privateKey, dataSignature)
+	if err != nil {
+		return "", err
+	}
+	
+	signatureFinal := base64.StdEncoding.EncodeToString(signature)
+
+	return signatureFinal, nil
 }

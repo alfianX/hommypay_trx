@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/alfianX/hommypay_trx/configs"
+	"github.com/alfianX/hommypay_trx/databases/merchant/terminals"
 	"github.com/alfianX/hommypay_trx/databases/trx/settlement"
 	settlementdetails "github.com/alfianX/hommypay_trx/databases/trx/settlement_details"
 	transactionlogs "github.com/alfianX/hommypay_trx/databases/trx/transaction_logs"
@@ -19,9 +20,10 @@ type service struct {
 	transactionLogService	transactionlogs.Service
 	settlementService		settlement.Service
 	settementDetailService	settlementdetails.Service
+	terminalService			terminals.Service
 }
 
-func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB) service {
+func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
 	return service{
 		logger:              lg,
 		router:              rtr,
@@ -30,5 +32,6 @@ func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *g
 		transactionLogService: transactionlogs.NewService(transactionlogs.NewRepo(dbTrx)),
 		settlementService: settlement.NewService(settlement.NewRepo(dbTrx)),
 		settementDetailService: settlementdetails.NewService(settlementdetails.NewRepo(dbTrx)),
+		terminalService: terminals.NewService(terminals.NewRepo(dbMerchant)),
 	}
 }

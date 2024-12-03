@@ -51,6 +51,17 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 
+	databaseMerchant, err := databases.Connect(databases.ConfigDB{
+		Host:     cnf.DatabaseMerchant.Host,
+		Port:     cnf.DatabaseMerchant.Port,
+		User:     cnf.DatabaseMerchant.User,
+		Password: cnf.DatabaseMerchant.Password,
+		Name:     cnf.DatabaseMerchant.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	log := internal.NewLogger()
 
 	gin.SetMode(cnf.Mode)
@@ -62,7 +73,7 @@ func NewServer() (*Server, error) {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-	RegisterRoutes(router, log, cnf, databaseTrx, databaseParam)
+	RegisterRoutes(router, log, cnf, databaseTrx, databaseParam, databaseMerchant)
 
 	s := Server{
 		logger: log,

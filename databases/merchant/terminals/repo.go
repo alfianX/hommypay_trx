@@ -21,3 +21,10 @@ func (r Repo) CheckTidMid(ctx context.Context, tid string, mid string) (int64, e
 	
 	return count, result.Error
 }
+
+func (r Repo) GetEmailMerchant(ctx context.Context, tid string, mid string) (string, error) {
+	var terminal Terminals
+	result := r.Db.WithContext(ctx).Select("email").Find(&terminal)
+
+	return terminal.Email, result.Error
+}

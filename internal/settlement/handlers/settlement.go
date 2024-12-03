@@ -29,7 +29,7 @@ func (s service) Settlement(c *gin.Context) {
 		Status             string `json:"status"`
 		ResponseCode       string `json:"responseCode"`
 		RefNo  	   		   string `json:"refNo"`
-		// Signature	  string `json:"signature"`
+		Signature	  string `json:"signature"`
 	}
 
 	req := types.SettlementRequest{}
@@ -231,10 +231,25 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
+	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
+	if err != nil {
+		h.ErrorLog("Get email merchant : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		return
+	}
+	
+	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.SettleDate, req.PaymentInformation.Trace, "0")
+	if err != nil {
+		h.ErrorLog("Create signature: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		return
+	}
+
 	responseOK := response{
 		Status: "SUCCESS",
 		ResponseCode: "00",
 		RefNo: refNo,
+		Signature: signatureFinal,
 	}
 
 	dataResponseByte, err := json.Marshal(responseOK)

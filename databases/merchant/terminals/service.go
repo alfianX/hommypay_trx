@@ -20,3 +20,12 @@ func (s Service) CheckTidMid(ctx context.Context, tid, mid string) (int64, error
 
 	return count, nil
 }
+
+func (s Service) GetEmailMerchant(ctx context.Context, tid string, mid string) (string, error) {
+	email, err := s.repo.GetEmailMerchant(ctx, tid, mid)
+	if err != nil {
+		return "", err
+	}
+
+	return email, nil
+}

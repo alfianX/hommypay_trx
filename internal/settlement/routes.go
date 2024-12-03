@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, lg *logrus.Logger, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB) {
-	handler := handlers.NewHandler(lg, r, cnf, dbTrx, dbParam)
+func RegisterRoutes(r *gin.Engine, lg *logrus.Logger, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) {
+	handler := handlers.NewHandler(lg, r, cnf, dbTrx, dbParam, dbMerchant)
 
 	r.Use(handler.MiddlewareLogger())
 	r.GET("/healthz", handler.Health)

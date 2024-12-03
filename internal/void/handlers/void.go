@@ -61,7 +61,7 @@ func (s service) Void(c *gin.Context) {
 		ResponseCode       string `json:"responseCode"`
 		TransactionID 	   string `json:"transactionID"`
 		ApprovalCode       string `json:"approvalCode"`
-		// Signature	  string `json:"signature"`
+		Signature	  string `json:"signature"`
 		ISO8583 string `json:"ISO8583"`
 	}
 
@@ -70,7 +70,7 @@ func (s service) Void(c *gin.Context) {
 		ResponseCode       string `json:"responseCode"`
 		TransactionID 	   string `json:"transactionID"`
 		ApprovalCode  	   string `json:"approvalCode"`
-		// Signature	  string `json:"signature"`
+		Signature	  string `json:"signature"`
 	}
 
 	req := types.VoidRequest{}
@@ -435,35 +435,21 @@ func (s service) Void(c *gin.Context) {
 		h.IssuerLog(logMessage, issuerName)
 	}
 
-	// filename := "keys/rsa_private.key"
-	// pem, err := os.ReadFile(filename)
-	// if err != nil {
-	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Read file: " + err.Error()}, http.StatusConflict)
-	// 	return
-	// }
-	// pemStr := string(pem)
-	// privateKey, err := rsa.ParseRsaPrivateKeyFromPemStr(pemStr)
-	// if err != nil {
-	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Parse private key: " + err.Error()}, http.StatusConflict)
-	// 	return
-	// }
-
-	// email, err := s.terminalsService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
-	// if err != nil {
-	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Get Email Merchant: " + err.Error()}, http.StatusConflict)
-	// 	return
-	// }
-
-	// trxDateSig := trxDate.Format("20060102150405")
-
-	// dataSignature := []byte(req.PaymentInformation.TID + req.PaymentInformation.MID + email + trxDateSig + approvalCode + req.PaymentInformation.Trace)
-	// signature, err := rsa.CreateSignature(privateKey, dataSignature)
-	// if err != nil {
-	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Create signature: " + err.Error()}, http.StatusConflict)
-	// 	return
-	// }
-
-	// signatureFinal := base64.StdEncoding.EncodeToString(signature)
+	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
+	if err != nil {
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		h.ErrorLog("Get email merchant : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		return
+	}
+	
+	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.TransactionDate, req.PaymentInformation.Trace, approvalCode)
+	if err != nil {
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		h.ErrorLog("Create signature: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		return
+	}
 
 
 	logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
@@ -500,6 +486,7 @@ func (s service) Void(c *gin.Context) {
 		respons.ResponseCode = responseCode
 		respons.TransactionID = transactionID
 		respons.ApprovalCode = approvalCode
+		respons.Signature = signatureFinal
 		h.Respond(c, respons, http.StatusOK)
 	} else {
 		respons := responseISO{}
@@ -507,8 +494,8 @@ func (s service) Void(c *gin.Context) {
 		respons.ResponseCode = responseCode
 		respons.TransactionID = transactionID
 		respons.ApprovalCode = approvalCode
+		respons.Signature = signatureFinal
 		respons.ISO8583 = ISO8583Res
 		h.Respond(c, respons, http.StatusOK)
 	}
-	// respons.PaymentInformation.Signature = signatureFinal
 }
