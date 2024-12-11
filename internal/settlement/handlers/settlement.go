@@ -28,8 +28,9 @@ func (s service) Settlement(c *gin.Context) {
 	type response struct {
 		Status             string `json:"status"`
 		ResponseCode       string `json:"responseCode"`
+		Message			   string `json:"message"`
 		RefNo  	   		   string `json:"refNo"`
-		Signature	  string `json:"signature"`
+		Signature	  	   string `json:"signature"`
 	}
 
 	req := types.SettlementRequest{}
@@ -44,11 +45,11 @@ func (s service) Settlement(c *gin.Context) {
             }
 			
 			// h.ErrorLog(err.Error())
-			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I6", "Message": out}, http.StatusBadRequest)
+			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
 		// h.ErrorLog(err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: err.Error()}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
@@ -69,7 +70,7 @@ func (s service) Settlement(c *gin.Context) {
 	totalTransactionDB, totalAmountDB, err := s.transactionService.GetSettleTotal(c, mid, tid, settementType)
 	if err != nil {
 		h.ErrorLog("Get settle total: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -83,7 +84,7 @@ func (s service) Settlement(c *gin.Context) {
 	saleCountDB, saleAmountDB, err := s.transactionService.GetSaleTotal(c, mid, tid, settementType)
 	if err != nil {
 		h.ErrorLog("Get sale total: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (s service) Settlement(c *gin.Context) {
 	voidCountDB, voidAmountDB, err := s.transactionService.GetVoidTotal(c, mid, tid, settementType)
 	if err != nil {
 		h.ErrorLog("Get void total: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -111,14 +112,14 @@ func (s service) Settlement(c *gin.Context) {
 	refNo, err := uniqueid.Generateid("n", 12)
 	if err != nil {
 		h.ErrorLog("Create ref no: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	dataRequestByte, err := json.Marshal(req)
 	if err != nil {
 		h.ErrorLog("Marshal request : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -153,14 +154,14 @@ func (s service) Settlement(c *gin.Context) {
 	})
 	if err != nil {
 		h.ErrorLog("Save settle: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	dataTrx, err := s.transactionService.GetDataTrx(c, mid, tid)
 	if err != nil {
 		h.ErrorLog("Get data transactions: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -170,7 +171,7 @@ func (s service) Settlement(c *gin.Context) {
 			err = s.settlementService.UpdateFirstSettleDate(c, id, data.TransactionDate)
 			if err != nil {
 				h.ErrorLog("Update first settle date: " + err.Error())
-				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
 			}
 		}
@@ -211,7 +212,7 @@ func (s service) Settlement(c *gin.Context) {
 		})
 		if err != nil {
 			h.ErrorLog("Save settle detail: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		i++
@@ -220,34 +221,35 @@ func (s service) Settlement(c *gin.Context) {
 	err = s.transactionService.UpdateSettleFlag(c, mid, tid)
 	if err != nil {
 		h.ErrorLog("Update settle flag: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	err = s.transactionLogService.CreateLogTrx(c, mid, tid)
 	if err != nil {
 		h.ErrorLog("Save log trx: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
 		h.ErrorLog("Get email merchant : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 	
 	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.SettleDate, req.PaymentInformation.Trace, "0")
 	if err != nil {
 		h.ErrorLog("Create signature: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	responseOK := response{
 		Status: "SUCCESS",
 		ResponseCode: "00",
+		Message: "Approved",
 		RefNo: refNo,
 		Signature: signatureFinal,
 	}
@@ -255,7 +257,7 @@ func (s service) Settlement(c *gin.Context) {
 	dataResponseByte, err := json.Marshal(responseOK)
 	if err != nil {
 		h.ErrorLog("Marshal response : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 

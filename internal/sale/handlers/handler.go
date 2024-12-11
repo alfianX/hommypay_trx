@@ -4,6 +4,7 @@ import (
 	"github.com/alfianX/hommypay_trx/configs"
 	"github.com/alfianX/hommypay_trx/databases/merchant/terminals"
 	binrange "github.com/alfianX/hommypay_trx/databases/param/bin_range"
+	fdsconfig "github.com/alfianX/hommypay_trx/databases/param/fds_config"
 	hsmconfig "github.com/alfianX/hommypay_trx/databases/param/hsm_config"
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
@@ -23,6 +24,7 @@ type service struct {
 	keyConfigService    	keyconfig.Service
 	reversalService			reversals.Service
 	terminalService			terminals.Service
+	fdsConfigService		fdsconfig.Service
 }
 
 func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
@@ -36,5 +38,6 @@ func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *g
 		keyConfigService:    keyconfig.NewService(keyconfig.NewRepo(dbParam)),
 		reversalService: 	 reversals.NewService(reversals.NewRepo(dbTrx)),
 		terminalService: 	 terminals.NewService(terminals.NewRepo(dbMerchant)),
+		fdsConfigService: fdsconfig.NewService(fdsconfig.NewRepo(dbParam)),
 	}
 }

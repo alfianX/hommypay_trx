@@ -30,6 +30,7 @@ func (s service) Logon(c *gin.Context) {
 	type response struct {
 		Status       string `json:"status"`
 		ResponseCode string `json:"responseCode"`
+		Message		 string `json:"message"`
 		Key          string `json:"key"`
 	}
 
@@ -38,28 +39,28 @@ func (s service) Logon(c *gin.Context) {
 	err := h.Decode(c, &req)
 	if err != nil {
 		h.ErrorLog(err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "E6", Message: err.Error()}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
 	if err != nil {
 		h.ErrorLog("Get ip address HSM: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	zek, err := s.keyConfigService.GetZEK(c)
 	if err != nil {
 		h.ErrorLog("Get ZEK: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	dataRequestByte, err := json.Marshal(req)
 	if err != nil {
 		h.ErrorLog("Marshal request : " + err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
 		return
 	}
 
@@ -77,7 +78,7 @@ func (s service) Logon(c *gin.Context) {
 	tmk, err := s.keyConfigService.GetTMK(c)
 	if err != nil {
 		h.ErrorLog("Get TMK: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -89,21 +90,21 @@ func (s service) Logon(c *gin.Context) {
 	responseHSM, err := h.SendMessageToHsm(ip+":"+port, message)
 	if err != nil {
 		h.ErrorLog("Send to HSM: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	resByte, err := hex.DecodeString(responseHSM)
 	if err != nil {
 		h.ErrorLog("Decode response: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	responseCode := string(resByte[8:10])
 	if responseCode != "00" {
 		h.ErrorLog("HSM response code " + responseCode)
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 	twk := string(resByte[11:43])
@@ -112,26 +113,27 @@ func (s service) Logon(c *gin.Context) {
 	err = s.terminalKeysService.SaveTPK(c, req.DeviceInformation.TID, tpk)
 	if err != nil {
 		h.ErrorLog("Save TPK: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	keyEnc, err := h.HSMEncrypt(ip+":"+port, zek, hex.EncodeToString([]byte(twk)))
 	if err != nil {
 		h.ErrorLog("Key encrypt: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	resp := response{}
 	resp.Status = "SUCCESS"
 	resp.ResponseCode = "00"
+	resp.Message = "Approved"
 	resp.Key = keyEnc
 
 	dataResponseByte, err := json.Marshal(resp)
 	if err != nil {
 		h.ErrorLog("Marshal response : " + err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
 		return
 	}
 

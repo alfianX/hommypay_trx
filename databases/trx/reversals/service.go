@@ -27,6 +27,8 @@ type SaveDataReversalParams struct {
 	Trace           string
 	Batch           string
 	IsoRequest      string
+	IssuerID		int64
+	ResponseCodeOrg string
 }
 
 type UpdateDataReversalParams struct {
@@ -66,6 +68,8 @@ func (s Service) SaveDataReversal(ctx context.Context, params SaveDataReversalPa
 		Trace: params.Trace,
 		Batch: params.Batch,
 		IsoRequest: params.IsoRequest,
+		IssuerID: params.IssuerID,
+		ResponseCodeOrigin: params.ResponseCodeOrg,
 		Flag: 70,
 		CreatedAt: time.Now(),
 	}
@@ -113,4 +117,48 @@ func (s *Service) CheckDataReversal(ctx context.Context, params CheckDataReversa
 	}
 
 	return id, flag, rcOrg, nil
+}
+
+func (s *Service) GetDataAutoReversal(ctx context.Context) ([]Reversals, error) {
+	data, err := s.repo.GetDataAutoReversal(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range data {
+		entity := Reversals{
+			ID: row.ID,
+			Flag: 85,
+		}
+
+		err = s.repo.UpdateFlagReversal(ctx, &entity)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return data, nil
+}
+
+func (s *Service) CreateAutoReversalLog(ctx context.Context, id int64) error {
+	err := s.repo.CreateAutoReversalLog(ctx, id)
+
+	return err
+}
+
+func (s Service) DeleteReversal(ctx context.Context, id int64) error {
+	err := s.repo.DeleteReversal(ctx, id)
+
+	return err
+}
+
+func (s *Service) UpdateBackFlagReversal(ctx context.Context, id int64) error {
+	entity := Reversals{
+		ID: id,
+		Flag: 70,
+	}
+
+	err := s.repo.UpdateBackFlagReversal(ctx, &entity)
+
+	return err
 }

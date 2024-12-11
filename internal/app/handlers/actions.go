@@ -19,7 +19,7 @@ func (s service) Actions(c *gin.Context) {
 	req, err := c.GetRawData()
 	if err != nil {
 		h.ErrorLog(err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Malfunction"}, http.StatusBadRequest)
 		return
 	}
 
@@ -27,7 +27,7 @@ func (s service) Actions(c *gin.Context) {
 	url, err := s.routeConfig.GetUrlByEndPoint(c, action)
 	if err != nil {
 		h.ErrorLog("Get url microservice: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusInternalServerError)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Malfunction"}, http.StatusInternalServerError)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (s service) Actions(c *gin.Context) {
 
 	if err != nil {
 		h.ErrorLog("Send to microservice: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusInternalServerError)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Malfunction"}, http.StatusInternalServerError)
 		return
 	}
 

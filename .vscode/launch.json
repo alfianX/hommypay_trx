@@ -38,6 +38,20 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceRoot}/cmd/void"
+    },
+    {
+      "name": "Settlement",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceRoot}/cmd/settlement"
+    },
+    {
+      "name": "Batch Upload",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceRoot}/cmd/batch-upload"
     }
   ]
 }

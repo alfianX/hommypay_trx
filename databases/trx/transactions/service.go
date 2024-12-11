@@ -340,7 +340,7 @@ func (s Service) UpdateReversalFlag(ctx context.Context, trxID string) error {
 }
 
 func (s Service) UpdateTOReversalFlag(ctx context.Context, trxID string) error {
-	err := s.repo.UpdateReversalFlag(ctx, trxID, 2)
+	err := s.repo.UpdateReversalFlagTO(ctx, trxID, 2)
 	if err != nil {
 		return err
 	}

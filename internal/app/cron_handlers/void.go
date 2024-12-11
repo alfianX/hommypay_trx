@@ -114,7 +114,7 @@ func (cs *CronService) VoidTrx(params transactiondata.TransactionData) {
 		var responseCode string
 		var iso8583 string
 		var approvalCode string
-		if params.DataResponse != "E6" {
+		if params.DataResponse[:1] == "{" {
 			var res response
 			err = json.Unmarshal([]byte(params.DataResponse), &res)
 			if err != nil {

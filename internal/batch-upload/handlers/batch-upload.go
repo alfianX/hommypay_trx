@@ -26,6 +26,7 @@ func (s service) BatchUpload(c *gin.Context) {
 	type response struct {
 		Status             string `json:"status"`
 		ResponseCode       string `json:"responseCode"`
+		Message			   string `json:"message"`
 	}
 
 	req := types.BatchUploadRequest{}
@@ -40,11 +41,11 @@ func (s service) BatchUpload(c *gin.Context) {
             }
 			
 			// h.ErrorLog(err.Error())
-			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I6", "Message": out}, http.StatusBadRequest)
+			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
 		// h.ErrorLog(err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: err.Error()}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
@@ -61,14 +62,14 @@ func (s service) BatchUpload(c *gin.Context) {
 	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", transactionDate, loc)
 	if err != nil {
 		h.ErrorLog("Parse time: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	dataRequestByte, err := json.Marshal(req)
 	if err != nil {
 		h.ErrorLog("Marshal request : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -94,31 +95,32 @@ func (s service) BatchUpload(c *gin.Context) {
 	})
 	if err != nil {
 		h.ErrorLog("Check data trx: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	if id == 0 {
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I8", Message: "Trx not found"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I1", Message: "Trx not found"}, http.StatusConflict)
 		return
 	}
 
 	err = s.transactionService.UpdateBatchFlag(c, id)
 	if err != nil {
 		h.ErrorLog("Update flag batch upload: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	responseOK := response{
 		Status: "SUCCESS",
 		ResponseCode: "00",
+		Message: "Approved",
 	}
 
 	dataResponseByte, err := json.Marshal(responseOK)
 	if err != nil {
 		h.ErrorLog("Marshal response : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 

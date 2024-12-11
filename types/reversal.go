@@ -14,7 +14,7 @@ type ReversalRequest struct {
 		KSN             string `json:"ksn"`
 	} `json:"paymentInformation" binding:"required"`
 	CardInformation struct {
-		PAN        string `json:"pan" binding:"required,min=16,max=16,numeric"`
+		PAN        string `json:"pan" binding:"required,min=16,max=19,numeric"`
 		Expiry     string `json:"expiry"`
 		TrackData2 string `json:"trackData" binding:"required"`
 		EMVTag     string `json:"emvTag"`

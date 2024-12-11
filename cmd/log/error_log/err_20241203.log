@@ -1,0 +1,20 @@
+[09:54:23] - Get fds address: Error 1054 (42S22): Unknown column 'fds_config' in 'field list'
+
+[09:55:54] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:54117->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[09:57:05] - Create signature: open keys/rsa_private.key: The system cannot find the path specified.
+
+[10:43:25] - Create signature: open keys/rsa_private.key: The system cannot find the path specified.
+
+[10:46:59] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:54820->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[10:49:34] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:54904->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[10:51:05] - Create signature: open keys/rsa_private.key: The system cannot find the path specified.
+
+[10:53:19] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:55057->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[10:55:35] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:55137->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[10:56:43] - Create signature: open keys/rsa_private.key: The system cannot find the path specified.
+

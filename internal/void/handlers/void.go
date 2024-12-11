@@ -59,6 +59,7 @@ func (s service) Void(c *gin.Context) {
 	type responseISO struct {
 		Status             string `json:"status"`
 		ResponseCode       string `json:"responseCode"`
+		Message      string `json:"message"`
 		TransactionID 	   string `json:"transactionID"`
 		ApprovalCode       string `json:"approvalCode"`
 		Signature	  string `json:"signature"`
@@ -68,6 +69,7 @@ func (s service) Void(c *gin.Context) {
 	type response struct {
 		Status             string `json:"status"`
 		ResponseCode       string `json:"responseCode"`
+		Message      string `json:"message"`
 		TransactionID 	   string `json:"transactionID"`
 		ApprovalCode  	   string `json:"approvalCode"`
 		Signature	  string `json:"signature"`
@@ -85,11 +87,11 @@ func (s service) Void(c *gin.Context) {
             }
 			
 			// h.ErrorLog(err.Error())
-			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I6", "Message": out}, http.StatusBadRequest)
+			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
 		// h.ErrorLog(err.Error())
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: err.Error()}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
@@ -143,68 +145,68 @@ func (s service) Void(c *gin.Context) {
 	data, err := s.transactionService.GetDataByTrxID(c, transactionIdSale)
 	if err != nil {
 		h.ErrorLog("Get data sale: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	if data.ID == 0 {
 		// h.ErrorLog("Transaction not found!")
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I8", Message: "Transaction not found!"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I1", Message: "Transaction not found!"}, http.StatusBadRequest)
 		return
 	}
 
 	if data.IssuerID == 0 {
 		h.ErrorLog("Issuer not found!")
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Issuer not found!"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Issuer not found!"}, http.StatusConflict)
 		return
 	}
 
 	if data.IssuerID == 99 {
 		if ISO8583 == "" {
 			// h.ErrorLog("ISO8583 empty!")
-			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: "ISO8583 empty!"}, http.StatusBadRequest)
+			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I2", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 			return
 		}
 	}
 
 	issuerID = data.IssuerID
 
-	issuerName, issuerConnType, cardType, issuerService, err = s.issuerService.GetUrlByIssuerID(c, data.IssuerID)
+	issuerName, issuerConnType, cardType, issuerService, err = s.issuerService.GetUrlByIssuerID(c, issuerID)
 	if err != nil {
 		h.ErrorLog("Get url issuer service: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	if issuerConnType == 0 {
 		h.ErrorLog("Issuer conn type not found!")
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	if issuerService == "" {
 		h.ErrorLog("Issuer service not found!")
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	if data.Trace != trace {
 		// h.ErrorLog("Trace not found!")
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I8", Message: "Trace not found!"}, http.StatusBadRequest)
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I4", Message: "Trace not found!"}, http.StatusBadRequest)
 		return
 	}
 
 	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
 	if err != nil {
 		h.ErrorLog("Get ip address HSM: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	zek, err := s.keyConfigService.GetZEK(c)
 	if err != nil {
 		h.ErrorLog("Get ZEK: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -212,7 +214,7 @@ func (s service) Void(c *gin.Context) {
 		panEnc, err = h.HSMEncrypt(ip+":"+port, zek, pan)
 		if err != nil {
 			h.ErrorLog("PAN encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.CardInformation.PAN = panEnc
@@ -223,7 +225,7 @@ func (s service) Void(c *gin.Context) {
 		expiryEnc, err = h.HSMEncrypt(ip+":"+port, zek, expiryToEnc)
 		if err != nil {
 			h.ErrorLog("Expiry encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.CardInformation.Expiry = expiryEnc
@@ -233,7 +235,7 @@ func (s service) Void(c *gin.Context) {
 		trackData2Enc, err = h.HSMEncrypt(ip+":"+port, zek, trackData2)
 		if err != nil {
 			h.ErrorLog("Trackdata2 encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.CardInformation.TrackData2 = trackData2Enc
@@ -243,7 +245,7 @@ func (s service) Void(c *gin.Context) {
 		emvTagEnc, err = h.HSMEncrypt(ip+":"+port, zek, emvTag)
 		if err != nil {
 			h.ErrorLog("Emv tag encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.CardInformation.EMVTag = emvTagEnc
@@ -253,7 +255,7 @@ func (s service) Void(c *gin.Context) {
 		pinBlockEnc, err = h.HSMEncrypt(ip+":"+port, zek, pinBlock)
 		if err != nil {
 			h.ErrorLog("Pin block encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.CardInformation.PinBlock = pinBlockEnc
@@ -263,7 +265,7 @@ func (s service) Void(c *gin.Context) {
 		iso8583Enc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583)
 		if err != nil {
 			h.ErrorLog("ISO req encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
 		}
 		req.ISO8583 = iso8583Enc
@@ -272,7 +274,7 @@ func (s service) Void(c *gin.Context) {
 	dataRequestByte, err := json.Marshal(req)
 	if err != nil {
 		h.ErrorLog("Marshal request : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -303,7 +305,7 @@ func (s service) Void(c *gin.Context) {
 	id, err := s.transactionDataService.SaveTrxDataReq(c, trxDataReqParams)
 	if err != nil {
 		h.ErrorLog("Save trx: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}	
 
@@ -332,9 +334,9 @@ func (s service) Void(c *gin.Context) {
 
 	payload, err := json.Marshal(dataToSend)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
 		h.ErrorLog("JSON marshal data send: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -351,8 +353,8 @@ func (s service) Void(c *gin.Context) {
 			extResp, err = h.TcpSendToIssuer(c, s.config, ISO8583, issuerService)
 			
 		}else{
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "I6")
-			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: "ISO8583 empty!"}, http.StatusBadRequest)
+			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "I2")
+			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I2", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 			return
 		}
 	}else if issuerConnType == 2 {
@@ -364,63 +366,55 @@ func (s service) Void(c *gin.Context) {
  
 	if err != nil {
 		if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
-			err = s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
-				TransactionID: transactionID,
-				TransactionType: "31",
-				Procode: req.PaymentInformation.Procode,
-				Mid: req.PaymentInformation.MID,
-				Tid: req.PaymentInformation.TID,
-				Amount: req.PaymentInformation.Amount,
-				TransactionDate: req.PaymentInformation.TransactionDate,
-				Stan: req.PaymentInformation.STAN,
-				Trace: req.PaymentInformation.Trace,
-				Batch: req.PaymentInformation.Batch,
-				IsoRequest: iso8583Enc,
-			})
-			if err != nil {
-				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
-				h.ErrorLog("Save data reversal: " + err.Error())
-				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+			errRvrsl := s.AutoReversal(c, req, transactionID, issuerID, "")
+			if errRvrsl != nil {
+				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+				h.ErrorLog("Save data reversal: " + errRvrsl.Error())
+				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
 			}
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "T1")
+			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "T0")
 			// h.ErrorLog("request timeout")
-			h.Respond(c, responseError{Status: "TIMEOUT", ResponseCode: "T1", Message: "request timeout"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "TIMEOUT", ResponseCode: "T0", Message: "request timeout"}, http.StatusConflict)
 			return
 		}else{
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "H1")
+			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E0")
 			h.ErrorLog("Send to microservice: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "H1", Message: "Host down!"}, http.StatusConflict)
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E0", Message: "Link down!"}, http.StatusConflict)
 			return
 		}
-	}
-
-	if extResp["ISO8583"] != nil {
-		ISO8583Res = extResp["ISO8583"].(string)
-		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
-		if err != nil {
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
-			h.ErrorLog("ISO res encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
-			return
-		}
-		extResp["ISO8583"] = iso8583ResEnc
 	}
 
 	var responseCode string
 	if extResp["responseCode"] != nil {
 		responseCode = extResp["responseCode"].(string)
 	}
+	var message string
+	if extResp["message"] != nil {
+		message = extResp["message"].(string)
+	}
 	var approvalCode string
 	if extResp["approvalCode"] != nil {
 		approvalCode = extResp["approvalCode"].(string)
 	}
 
+	if extResp["ISO8583"] != nil {
+		ISO8583Res = extResp["ISO8583"].(string)
+		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
+		if err != nil {
+			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+			h.ErrorLog("ISO res encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		extResp["ISO8583"] = iso8583ResEnc
+	}
+
 	dataResponseByte, err := json.Marshal(extResp)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
 		h.ErrorLog("Marshal response : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -437,17 +431,17 @@ func (s service) Void(c *gin.Context) {
 
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
 		h.ErrorLog("Get email merchant : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 	
 	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.TransactionDate, req.PaymentInformation.Trace, approvalCode)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
 		h.ErrorLog("Create signature: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -461,9 +455,9 @@ func (s service) Void(c *gin.Context) {
 	})
 
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
 		h.ErrorLog("Update trx: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Malfunction"}, http.StatusConflict)
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
@@ -474,6 +468,11 @@ func (s service) Void(c *gin.Context) {
 	// default: 
 	// 	fmt.Fprintln(c.Writer, "Client is still connected") 
 	// }
+	testTimeout := s.config.TestTimeout
+	timeInt := s.config.Timeout
+	if testTimeout == 1 {
+		time.Sleep(time.Duration(timeInt) * time.Second)
+	}
 
 	responseStatus := "SUCCESS"
 	if responseCode != "00" {
@@ -484,6 +483,7 @@ func (s service) Void(c *gin.Context) {
 		respons := response{}
 		respons.Status = responseStatus
 		respons.ResponseCode = responseCode
+		respons.Message = message
 		respons.TransactionID = transactionID
 		respons.ApprovalCode = approvalCode
 		respons.Signature = signatureFinal
@@ -492,10 +492,31 @@ func (s service) Void(c *gin.Context) {
 		respons := responseISO{}
 		respons.Status = responseStatus
 		respons.ResponseCode = responseCode
+		respons.Message = message
 		respons.TransactionID = transactionID
 		respons.ApprovalCode = approvalCode
 		respons.Signature = signatureFinal
 		respons.ISO8583 = ISO8583Res
 		h.Respond(c, respons, http.StatusOK)
 	}
+}
+
+func (s service) AutoReversal(c *gin.Context, req types.VoidRequest, trxId string, issuerID int64, rcOrg string) error {
+	err := s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
+		TransactionID: trxId,
+		TransactionType: "31",
+		Procode: req.PaymentInformation.Procode,
+		Mid: req.PaymentInformation.MID,
+		Tid: req.PaymentInformation.TID,
+		Amount: req.PaymentInformation.Amount,
+		TransactionDate: req.PaymentInformation.TransactionDate,
+		Stan: req.PaymentInformation.STAN,
+		Trace: req.PaymentInformation.Trace,
+		Batch: req.PaymentInformation.Batch,
+		IsoRequest: req.ISO8583,
+		IssuerID: issuerID,
+		ResponseCodeOrg: rcOrg,
+	})
+
+	return err
 }

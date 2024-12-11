@@ -228,6 +228,14 @@ func (r Repo) UpdateReversalFlag(ctx context.Context, trxId string, flag int64) 
 	return result.Error
 }
 
+func (r Repo) UpdateReversalFlagTO(ctx context.Context, trxId string, flag int64) error {
+	result := r.Db.WithContext(ctx).Model(&Transactions{}).
+				Where(`transaction_id = ?`,trxId).
+				Updates(&Transactions{ReversalFlag: flag, UpdatedAt: time.Now()})
+
+	return result.Error
+}
+
 func (r Repo) UpdateReversalVoidID(ctx context.Context, trxId string) error {
 	result := r.Db.WithContext(ctx).Model(&Transactions{}).
 				Where(`void_id = ? AND status = ? AND response_code = ? AND reversal_flag != ?`,
