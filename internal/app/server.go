@@ -12,7 +12,6 @@ import (
 	"github.com/alfianX/hommypay_trx/configs"
 	"github.com/alfianX/hommypay_trx/databases"
 	"github.com/alfianX/hommypay_trx/internal"
-	cronhandlers "github.com/alfianX/hommypay_trx/internal/app/cron_handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -22,22 +21,10 @@ type Server struct {
 	logger *logrus.Logger
 	router *gin.Engine
 	config configs.Config
-	cron   cronhandlers.CronService
 }
 
 func NewServer() (*Server, error) {
 	cnf, err := configs.NewParsedConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	databaseTrx, err := databases.Connect(databases.ConfigDB{
-		Host:     cnf.DatabaseTrx.Host,
-		Port:     cnf.DatabaseTrx.Port,
-		User:     cnf.DatabaseTrx.User,
-		Password: cnf.DatabaseTrx.Password,
-		Name:     cnf.DatabaseTrx.Name,
-	})
 	if err != nil {
 		return nil, err
 	}
@@ -65,20 +52,17 @@ func NewServer() (*Server, error) {
 		AllowCredentials: true,
 	}))
 	RegisterRoutes(router, log, databaseParam)
-	cron := cronhandlers.NewCronjob(databaseTrx, databaseParam)
 	
 	s := Server{
 		logger: log,
 		config: cnf,
 		router: router,
-		cron: cron,
 	}
 
 	return &s, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	go s.cron.CronJob()
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", s.config.ServerPort),
 		Handler: s.router,

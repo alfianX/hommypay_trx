@@ -22,6 +22,7 @@ type CronService struct {
 
 func NewCronJob(cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB) CronService {
 	return CronService{
+		config: cnf,
 		reversalService: reversals.NewService(reversals.NewRepo(dbTrx)),
 		hsmConfigService: hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
 		keyConfigService: keyconfig.NewService(keyconfig.NewRepo(dbParam)),
@@ -35,6 +36,10 @@ func (cs *CronService) CronJob() {
 
 	c.AddFunc("@every 5s", func() {
 		go cs.AutoReversal()
+	})
+	
+	c.AddFunc("@every 30s", func() {
+		go cs.SafReversal()
 	})
 
 	c.Start()

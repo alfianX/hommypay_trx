@@ -3,10 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
@@ -58,6 +55,12 @@ func (s service) BatchUpload(c *gin.Context) {
 	trace := req.PaymentInformation.Trace
 	batch := req.PaymentInformation.Batch
 
+	currentTime := time.Now()
+	timeFormat := "15:04:05"
+	timeString := currentTime.Format(timeFormat)
+	dateFormat := "20060102"
+	dateString := currentTime.Format(dateFormat)
+
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", transactionDate, loc)
 	if err != nil {
@@ -73,15 +76,13 @@ func (s service) BatchUpload(c *gin.Context) {
 		return
 	}
 
-	re := regexp.MustCompile(`\r?\n`)
-	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
+	// re := regexp.MustCompile(`\r?\n`)
+	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
+	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
 
-	currentTime := time.Now()
-	gmtFormat := "15:04:05"
-	timeString := currentTime.Format(gmtFormat)
-	logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	h.HistoryLog(logMessage, "batch_upload")
+	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
+	// h.HistoryLog(logMessage, "batch_upload")
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "batch_upload")
 
 	id, err := s.transactionService.CheckBatchDataTrx(c, transactions.CheckDataTrxParams{
 		Procode: procode,
@@ -124,11 +125,12 @@ func (s service) BatchUpload(c *gin.Context) {
 		return
 	}
 
-	dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	dataResponse = strings.ReplaceAll(dataResponse, " ", "")
+	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
+	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
 
-	logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	h.HistoryLog(logMessage, "batch_upload")
+	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
+	// h.HistoryLog(logMessage, "batch_upload")
+	h.HistoryRespLog(dataResponseByte, dateString, timeString, "batch_upload")
 
 	h.Respond(c, responseOK, http.StatusOK)
 }

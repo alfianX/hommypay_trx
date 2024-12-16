@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Batch Upload Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/batch-upload
+ExecStart=/home/rm/projects/hommypay_trx/batch-upload/hommypay-trx-batch-upload
+
+[Install]
+WantedBy=multi-user.target

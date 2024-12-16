@@ -21,6 +21,7 @@ type SettlementDetails struct {
 	StanIssuer			string	  `json:"stan_issuer"`
 	Rrn					string	  `json:"rrn"`
 	Trace               string    `json:"trace"`
+	Batch				string	  `json:"batch"`
 	TransMode			string	  `json:"trans_mode"`
 	IsoRequest      	string    `json:"iso_request"`
 	IsoRequestIssuer  	string    `json:"iso_request_issuer"`
@@ -35,6 +36,7 @@ type SettlementDetails struct {
 	IsoResponseIssuer 	string    `json:"iso_response_issuer"`
 	IssuerID            int64     `json:"issuer_id"`
 	Status              int64     `json:"status"`
+	Signature			string	  `json:"signature"`
 	VoidID              string    `json:"void_id"`
 	CutOff				string	  `json:"cut_off"`
 	CreatedAt           time.Time `gorm:"autoCreateTime:false" json:"created_at"`

@@ -33,6 +33,7 @@ type CreateSettleParams struct {
 	PosSaleAmount    int64
 	PosVoidCount     int64
 	PosVoidAmount    int64
+	Signature		 string
 }
 
 func (s Service) CreateSettle(ctx context.Context, settleType string, params CreateSettleParams) (int64, error) {
@@ -58,6 +59,7 @@ func (s Service) CreateSettle(ctx context.Context, settleType string, params Cre
 		HostSaleAmount:   params.SaleAmount,
 		PosSaleCount:     params.PosSaleCount,
 		PosSaleAmount:    params.PosSaleAmount,
+		Signature: 		  params.Signature,
 		CreatedAt: 		  time.Now(),
 	}
 

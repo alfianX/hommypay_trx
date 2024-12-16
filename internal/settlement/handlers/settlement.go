@@ -3,10 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"regexp"
-	"strings"
 	"time"
 
 	uniqueid "github.com/albinj12/unique-id"
@@ -67,6 +64,30 @@ func (s service) Settlement(c *gin.Context) {
 	voidCount := req.OrderInformation.VoidCount
 	voidAmount := req.OrderInformation.VoidAmount
 
+	currentTime := time.Now()
+	timeFormat := "15:04:05"
+	timeString := currentTime.Format(timeFormat)
+	dateFormat := "20060102"
+	dateString := currentTime.Format(dateFormat)
+
+	dataRequestByte, err := json.Marshal(req)
+	if err != nil {
+		h.ErrorLog("Marshal request : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	// re := regexp.MustCompile(`\r?\n`)
+	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
+	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
+
+	// currentTime := time.Now()
+	// gmtFormat := "15:04:05"
+	// timeString := currentTime.Format(gmtFormat)
+	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
+	// h.HistoryLog(logMessage, "settlement")
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "settlement")
+
 	totalTransactionDB, totalAmountDB, err := s.transactionService.GetSettleTotal(c, mid, tid, settementType)
 	if err != nil {
 		h.ErrorLog("Get settle total: " + err.Error())
@@ -116,22 +137,19 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	dataRequestByte, err := json.Marshal(req)
+	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
-		h.ErrorLog("Marshal request : " + err.Error())
+		h.ErrorLog("Get email merchant : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
-
-	re := regexp.MustCompile(`\r?\n`)
-	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	currentTime := time.Now()
-	gmtFormat := "15:04:05"
-	timeString := currentTime.Format(gmtFormat)
-	logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	h.HistoryLog(logMessage, "settlement")
+	
+	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.SettleDate, req.PaymentInformation.Trace, refNo)
+	if err != nil {
+		h.ErrorLog("Create signature: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
 
 	id, err := s.settlementService.CreateSettle(c, settementType, settlement.CreateSettleParams{
 		MID: mid,
@@ -151,6 +169,7 @@ func (s service) Settlement(c *gin.Context) {
 		PosSaleAmount: saleAmount,
 		PosVoidCount: voidCount,
 		PosVoidAmount: voidAmount,
+		Signature: signatureFinal,
 	})
 	if err != nil {
 		h.ErrorLog("Save settle: " + err.Error())
@@ -194,6 +213,7 @@ func (s service) Settlement(c *gin.Context) {
 			STANIssuer: data.StanIssuer,
 			Rrn: data.Rrn,
 			Trace: data.Trace,
+			Batch: data.Batch,
 			ISO8583Request: data.IsoRequest,
 			ISO8583RequestIssuer: data.IsoRequestIssuer,
 			ResponseCode: data.ResponseCode,
@@ -206,6 +226,7 @@ func (s service) Settlement(c *gin.Context) {
 			ISO8583Response: data.IsoResponse,
 			ISO8583ResponseIssuer: data.IsoResponseIssuer,
 			IssuerID: data.IssuerID,
+			Signature: data.Signature,
 			VoidID: data.VoidID,
 			BatchUFlag: data.BatchUFlag,
 			CutOff: data.SettledDate,
@@ -232,20 +253,6 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
-	if err != nil {
-		h.ErrorLog("Get email merchant : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
-	}
-	
-	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.SettleDate, req.PaymentInformation.Trace, "0")
-	if err != nil {
-		h.ErrorLog("Create signature: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
-	}
-
 	responseOK := response{
 		Status: "SUCCESS",
 		ResponseCode: "00",
@@ -261,11 +268,12 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	dataResponse = strings.ReplaceAll(dataResponse, " ", "")
+	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
+	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
 
-	logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	h.HistoryLog(logMessage, "settlement")
+	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
+	// h.HistoryLog(logMessage, "settlement")
+	h.HistoryRespLog(dataResponseByte, dateString, timeString, "settlement")
 
 	h.Respond(c, responseOK, http.StatusOK)
 }

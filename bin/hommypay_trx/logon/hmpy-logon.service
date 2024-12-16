@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Logon Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/logon
+ExecStart=/home/rm/projects/hommypay_trx/logon/hommypay-trx-logon
+
+[Install]
+WantedBy=multi-user.target

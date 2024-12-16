@@ -11,6 +11,7 @@ type TransactionData struct {
 	IssuerID		int64		`json:"issuer_id"`
 	Longitude		string		`json:"longitude"`
 	Latitude		string		`json:"latitude"`
+	Signature		string		`json:"signature"`
 	CreatedAt       time.Time 	`gorm:"autoCreateTime:false" json:"created_at"`
 	Flag			int64		`json:"flag"`
 }

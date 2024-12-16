@@ -76,6 +76,7 @@ func (s service) Void(c *gin.Context) {
 	}
 
 	req := types.VoidRequest{}
+	reqLog := types.VoidLogRequest{}
 
 	err := h.Decode(c, &req)
 	if err != nil {
@@ -92,6 +93,16 @@ func (s service) Void(c *gin.Context) {
 		}
 		// h.ErrorLog(err.Error())
 		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	reqLog.PaymentInformation = req.PaymentInformation
+	reqLog.PosTerminal = req.PosTerminal
+
+	dataRequestLogByte, err := json.Marshal(reqLog)
+	if err != nil {
+		h.ErrorLog("Marshal request log : " + err.Error())
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
 		return
 	}
 
@@ -141,6 +152,114 @@ func (s service) Void(c *gin.Context) {
 		pinBlock = req.CardInformation.PinBlock
 		ksn = req.PaymentInformation.KSN
 	}
+
+	currentTime := time.Now()
+	timeFormat := "15:04:05"
+	timeString := currentTime.Format(timeFormat)
+	dateFormat := "20060102"
+	dateString := currentTime.Format(dateFormat)
+
+	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
+	if err != nil {
+		h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+		h.ErrorLog("Get ip address HSM: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	zek, err := s.keyConfigService.GetZEK(c)
+	if err != nil {
+		h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+		h.ErrorLog("Get ZEK: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if pan != "" {
+		panEnc, err = h.HSMEncrypt(ip+":"+port, zek, pan)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("PAN encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.CardInformation.PAN = panEnc
+	}
+
+	if expiry != "" {
+		expiryToEnc := strings.ReplaceAll(expiry, "/", "")
+		expiryEnc, err = h.HSMEncrypt(ip+":"+port, zek, expiryToEnc)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("Expiry encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.CardInformation.Expiry = expiryEnc
+	}
+
+	if trackData2 != "" {
+		trackData2Enc, err = h.HSMEncrypt(ip+":"+port, zek, trackData2)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("Trackdata2 encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.CardInformation.TrackData2 = trackData2Enc
+	}
+
+	if emvTag != "" {
+		emvTagEnc, err = h.HSMEncrypt(ip+":"+port, zek, emvTag)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("Emv tag encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.CardInformation.EMVTag = emvTagEnc
+	}
+
+	if pinBlock != "" {
+		pinBlockEnc, err = h.HSMEncrypt(ip+":"+port, zek, pinBlock)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("Pin block encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.CardInformation.PinBlock = pinBlockEnc
+	}
+
+	if ISO8583 != "" {
+		iso8583Enc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583)
+		if err != nil {
+			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+			h.ErrorLog("ISO req encrypt: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+		req.ISO8583 = iso8583Enc
+	}
+
+	dataRequestByte, err := json.Marshal(req)
+	if err != nil {
+		h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
+		h.ErrorLog("Marshal request : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	re := regexp.MustCompile(`\r?\n`)
+	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
+	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
+
+	// currentTime := time.Now()
+	// gmtFormat := "15:04:05"
+	// timeString := currentTime.Format(gmtFormat)
+	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
+	// h.HistoryLog(logMessage, "sale")
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "void")
 
 	data, err := s.transactionService.GetDataByTrxID(c, transactionIdSale)
 	if err != nil {
@@ -196,102 +315,9 @@ func (s service) Void(c *gin.Context) {
 		return
 	}
 
-	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
-	if err != nil {
-		h.ErrorLog("Get ip address HSM: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
-	}
-
-	zek, err := s.keyConfigService.GetZEK(c)
-	if err != nil {
-		h.ErrorLog("Get ZEK: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
-	}
-
-	if pan != "" {
-		panEnc, err = h.HSMEncrypt(ip+":"+port, zek, pan)
-		if err != nil {
-			h.ErrorLog("PAN encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.PAN = panEnc
-	}
-
-	if expiry != "" {
-		expiryToEnc := strings.ReplaceAll(expiry, "/", "")
-		expiryEnc, err = h.HSMEncrypt(ip+":"+port, zek, expiryToEnc)
-		if err != nil {
-			h.ErrorLog("Expiry encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.Expiry = expiryEnc
-	}
-
-	if trackData2 != "" {
-		trackData2Enc, err = h.HSMEncrypt(ip+":"+port, zek, trackData2)
-		if err != nil {
-			h.ErrorLog("Trackdata2 encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.TrackData2 = trackData2Enc
-	}
-
-	if emvTag != "" {
-		emvTagEnc, err = h.HSMEncrypt(ip+":"+port, zek, emvTag)
-		if err != nil {
-			h.ErrorLog("Emv tag encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.EMVTag = emvTagEnc
-	}
-
-	if pinBlock != "" {
-		pinBlockEnc, err = h.HSMEncrypt(ip+":"+port, zek, pinBlock)
-		if err != nil {
-			h.ErrorLog("Pin block encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.PinBlock = pinBlockEnc
-	}
-
-	if ISO8583 != "" {
-		iso8583Enc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583)
-		if err != nil {
-			h.ErrorLog("ISO req encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.ISO8583 = iso8583Enc
-	}
-
-	dataRequestByte, err := json.Marshal(req)
-	if err != nil {
-		h.ErrorLog("Marshal request : " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
-	}
-
-	re := regexp.MustCompile(`\r?\n`)
-	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	currentTime := time.Now()
-	gmtFormat := "15:04:05"
-	timeString := currentTime.Format(gmtFormat)
-	logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	h.HistoryLog(logMessage, "sale")
-
-	currentTime = time.Now().UTC()
-	gmtFormat = "20060102150405"
-	dateString := currentTime.Format(gmtFormat)
-	transactionID := "TRX" + dateString + strconv.Itoa(time.Now().Nanosecond())[2:5]
+	dateTimeFormat := "20060102150405"
+	dateTimeString := currentTime.Format(dateTimeFormat)
+	transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
 	trxDataReqParams := transactiondata.TrxDataReqParams{
 		TransactionID: transactionID,
@@ -422,12 +448,16 @@ func (s service) Void(c *gin.Context) {
 	dataResponse = strings.ReplaceAll(dataResponse, " ", "")
 
 	if issuerConnType == 1 {
-		logMessage = fmt.Sprintf("\n Response: %s\n", iso8583ResEnc)
+		logMessage := fmt.Sprintf("\n Response: %s\n", iso8583ResEnc)
 		h.IssuerLog(logMessage, issuerName)
 	}else if issuerConnType == 2 {
-		logMessage = fmt.Sprintf("\n Response: %s\n", dataResponse)
+		logMessage := fmt.Sprintf("\n Response: %s\n", dataResponse)
 		h.IssuerLog(logMessage, issuerName)
 	}
+
+	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
+	// h.HistoryLog(logMessage, "sale")
+	h.HistoryRespLog(dataResponseByte, dateString, timeString, "void")
 
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
@@ -445,13 +475,10 @@ func (s service) Void(c *gin.Context) {
 		return
 	}
 
-
-	logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	h.HistoryLog(logMessage, "sale")
-
 	err = s.transactionDataService.UpdateTrxDataRes(c, transactiondata.TrxDataResParams{
 		ID: id,
 		DataRes: dataResponse,
+		Signature: signatureFinal,
 	})
 
 	if err != nil {
@@ -515,7 +542,6 @@ func (s service) AutoReversal(c *gin.Context, req types.VoidRequest, trxId strin
 		Batch: req.PaymentInformation.Batch,
 		IsoRequest: req.ISO8583,
 		IssuerID: issuerID,
-		ResponseCodeOrg: rcOrg,
 	})
 
 	return err

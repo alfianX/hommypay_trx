@@ -1,0 +1,18 @@
+[15:23:27] - Parse trx date: parsing time "2024-12-12 15:23:11" as "2006-01-0215:04:05": cannot parse " 15:23:11" as "15"
+
+[15:24:31] - Fds check: Send fds: Post "http://localhost:90/fds_rm/apiFDS.php": dial tcp [::1]:90: connectex: No connection could be made because the target machine actively refused it.
+
+[15:26:13] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53427->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:30:09] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53475->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:31:05] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53583->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:32:18] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53630->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:33:15] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53674->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:35:06] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53721->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+
+[15:37:48] - Send to microservice: Post "http://localhost:7771/sale": read tcp [::1]:53774->[::1]:7771: wsarecv: An existing connection was forcibly closed by the remote host.
+

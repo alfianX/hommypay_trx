@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Service Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/reversal
+ExecStart=/home/rm/projects/hommypay_trx/reversal/hommypay-trx-reversal
+
+[Install]
+WantedBy=multi-user.target

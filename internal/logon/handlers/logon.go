@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -43,6 +42,12 @@ func (s service) Logon(c *gin.Context) {
 		return
 	}
 
+	currentTime := time.Now()
+	timeFormat := "15:04:05"
+	timeString := currentTime.Format(timeFormat)
+	dateFormat := "20060102"
+	dateString := currentTime.Format(dateFormat)
+
 	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
 	if err != nil {
 		h.ErrorLog("Get ip address HSM: " + err.Error())
@@ -64,15 +69,16 @@ func (s service) Logon(c *gin.Context) {
 		return
 	}
 
-	re := regexp.MustCompile(`\r?\n`)
-	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
+	// re := regexp.MustCompile(`\r?\n`)
+	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
+	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
 
-	currentTime := time.Now()
-	gmtFormat := "15:04:05"
-	dateString := currentTime.Format(gmtFormat)
-	logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", dateString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	h.HistoryLog(logMessage, "logon")
+	// currentTime := time.Now()
+	// gmtFormat := "15:04:05"
+	// dateString := currentTime.Format(gmtFormat)
+	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", dateString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
+	// h.HistoryLog(logMessage, "logon")
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "logon")
 
 
 	tmk, err := s.keyConfigService.GetTMK(c)
@@ -137,11 +143,12 @@ func (s service) Logon(c *gin.Context) {
 		return
 	}
 
-	dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	dataResponse = strings.ReplaceAll(dataResponse, " ", "")
+	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
+	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
 
-	logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	h.HistoryLog(logMessage, "logon")
+	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
+	// h.HistoryLog(logMessage, "logon")
+	h.HistoryRespLog(dataResponseByte, dateString, timeString, "logon")
 
 	resp.Key = hex.EncodeToString([]byte(twk))
 

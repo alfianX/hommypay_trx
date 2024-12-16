@@ -27,6 +27,7 @@ type TrxDataReqParams struct {
 type TrxDataResParams struct {
 	ID				int64
 	DataRes			string
+	Signature		string
 }
 
 func (s Service) SaveTrxDataReq(ctx context.Context, params TrxDataReqParams) (int64, error) {
@@ -53,6 +54,7 @@ func (s Service) UpdateTrxDataRes(ctx context.Context, params TrxDataResParams) 
 	entity := TransactionData{
 		ID: params.ID,
 		DataResponse: params.DataRes,
+		Signature: params.Signature,
 		Flag: 80,
 	}
 

@@ -11,7 +11,7 @@ type Config struct {
 	DatabaseParam DatabaseParam
 	DatabaseMerchant DatabaseMerchant
 	ServerPort    int `envconfig:"SERVER_PORT" default:"88"`
-	TimeoutTrx	  int `envconfig:"TIMEOUT_TRX" default:"30"`
+	TimeoutTrx	  int `envconfig:"TIMEOUT_TRX" default:"60"`
 	TestTimeout	  int `envconfig:"TEST_TIMEOUT" default:"0"`
 	Timeout		  int `envconfig:"TIMEOUT" default:"65"` 
 }

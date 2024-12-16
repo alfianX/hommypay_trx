@@ -14,12 +14,13 @@ type BatchUploadRequest struct {
 		KSN             string `json:"ksn"`
 	} `json:"paymentInformation" binding:"required"`
 	CardInformation struct {
-		PAN        string `json:"pan" binding:"required,min=16,max=16,numeric"`
+		AID        string `json:"aid"`
+		PAN        string `json:"pan"`
 		Expiry     string `json:"expiry"`
-		TrackData2 string `json:"trackData" binding:"required"`
+		TrackData2 string `json:"trackData"`
 		EMVTag     string `json:"emvTag"`
 		PinBlock   string `json:"pinBlock"`
-	} `json:"cardInformation" binding:"required"`
+	} `json:"cardInformation"`
 	PosTerminal struct {
 		TransMode string `json:"transMode"`
 		Code      string `json:"code"`

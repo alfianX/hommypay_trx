@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay App Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/app
+ExecStart=/home/rm/projects/hommypay_trx/app/hommypay-trx-app
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Void Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/void
+ExecStart=/home/rm/projects/hommypay_trx/void/hommypay-trx-void
+
+[Install]
+WantedBy=multi-user.target

@@ -42,6 +42,7 @@ type UpdateSaleParams struct {
 	ResponseCode    string
 	ISO8583Response string
 	ApprovalCode    string
+	Signature		string
 }
 
 type UpdateVoidParams struct {
@@ -50,6 +51,7 @@ type UpdateVoidParams struct {
 	ResponseCode    string
 	ISO8583Response string
 	ApprovalCode    string
+	Signature		string
 	SaleID          int64
 }
 
@@ -62,6 +64,52 @@ type CheckDataTrxParams struct {
 	STAN            string
 	Trace           string
 	Batch			string
+}
+
+type CheckStanParams struct {
+	TID		string
+	MID		string
+	STAN 	string
+}
+
+func (s Service) CheckData(ctx context.Context, params CheckDataTrxParams) (int64, error) {
+	entity := Transactions{
+		TransactionType: "01",
+		Procode: params.Procode,
+		Mid: params.MID,
+		Tid: params.TID,
+		Amount: params.Amount,
+		TransactionDate: params.TransactionDate,
+		Stan: params.STAN,
+		Trace: params.Trace,
+		Batch: params.Batch,
+	}
+
+	count, err := s.repo.CheckData(ctx, &entity)
+	if err != nil {
+		return 0, nil
+	}
+
+	return count, nil
+}
+
+func (s Service) CheckStan(ctx context.Context, params CheckStanParams) (int64, error) {
+	entity := Transactions{
+		TransactionType: "01",
+		Mid: params.MID,
+		Tid: params.TID,
+		Stan: params.STAN,
+	}
+
+	date := time.Now()
+	dateNow := date.Format("2006-01-02")
+
+	count, err := s.repo.CheckStan(ctx, &entity, dateNow)
+	if err != nil {
+		return 0, nil
+	}
+
+	return count, nil
 }
 
 func (s Service) CreateSaleTrx(ctx context.Context, params CreateTrxParams) (int64, error) {
@@ -173,6 +221,7 @@ func (s Service) UpdateSaleTrx(ctx context.Context, params UpdateSaleParams) err
 		ResponseCode:    params.ResponseCode,
 		IsoResponse: 	 params.ISO8583Response,
 		ApprovalCode:    params.ApprovalCode,
+		Signature: 		 params.Signature,
 	}
 
 	err := s.repo.UpdateTrx(ctx, &entity)
@@ -210,6 +259,7 @@ func (s Service) UpdateVoidTrx(ctx context.Context, params UpdateVoidParams) err
 		ResponseCode:    params.ResponseCode,
 		IsoResponse: 	 params.ISO8583Response,
 		ApprovalCode:    params.ApprovalCode,
+		Signature: 		 params.Signature,	
 	}
 
 	err := s.repo.UpdateTrx(ctx, &entity)

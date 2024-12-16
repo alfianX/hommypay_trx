@@ -41,6 +41,7 @@ type Transactions struct {
 	Status            int64         `json:"status"`
 	Longitude         string        `json:"longitude"`
 	Latitude          string        `json:"latitude"`
+	Signature		  string		`json:"signature"`
 	VoidID            string        `json:"void_id"`
 	SettleFlag        int64         `json:"settle_flag"`
 	ReversalFlag      int64         `json:"reversal_flag"`

@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Settlement Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/settlement
+ExecStart=/home/rm/projects/hommypay_trx/settlement/hommypay-trx-settlement
+
+[Install]
+WantedBy=multi-user.target

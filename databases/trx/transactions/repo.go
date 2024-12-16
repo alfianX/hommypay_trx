@@ -16,6 +16,29 @@ func NewRepo(db *gorm.DB) Repo {
 	return Repo{Db: db}
 }
 
+func (r Repo) CheckData(ctx context.Context, entity *Transactions) (int64, error) {
+	var count int64
+
+	result := r.Db.WithContext(ctx).Model(&entity).
+	Where(`transaction_type = ? AND procode = ? AND mid = ? AND tid = ? AND amount = ? AND 
+			transaction_date = ? AND stan = ? AND trace = ? AND batch = ? AND response_code IS NOT NULL`, 
+			entity.TransactionType, entity.Procode,	entity.Mid, entity.Tid, entity.Amount, 
+			entity.TransactionDate, entity.Stan, entity.Trace, entity.Batch).Count(&count)
+	
+	return count, result.Error
+}
+
+func (r Repo) CheckStan(ctx context.Context, entity *Transactions, dateNow string) (int64, error) {
+	var count int64
+
+	result := r.Db.WithContext(ctx).Model(&entity).
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND stan = ? AND 
+					DATE_FORMAT(transaction_date, '%Y-%m-%d') = ? AND response_code IS NOT NULL`, entity.TransactionType, entity.Mid,
+						entity.Tid, entity.Stan, dateNow).Count(&count)
+
+	return count, result.Error
+}
+
 func (r Repo) CreateTrx(ctx context.Context, entity *Transactions) (int64, error) {
 	result := r.Db.WithContext(ctx).Select(
 		"transaction_id",
@@ -51,6 +74,7 @@ func (r Repo) UpdateTrx(ctx context.Context, entity *Transactions) error {
 		ResponseAt: time.Now(),
 		IsoResponse: entity.IsoResponse,
 		ApprovalCode: entity.ApprovalCode,
+		Signature: entity.Signature,
 		Status: 2,
 		UpdatedAt: time.Now(),
 	})
@@ -191,8 +215,7 @@ func (r Repo) GetDataTrx(ctx context.Context, mid string, tid string) ([]Transac
 
 func (r Repo) UpdateSettleFlag(ctx context.Context, mid string, tid string) error {
 	result := r.Db.WithContext(ctx).Model(&Transactions{}).
-				Where(`mid = ? AND tid = ? AND status = ? AND
-				response_code = ? AND reversal_flag != ? AND settle_flag = ?`, mid, tid, 2, "00", 1, 0).
+				Where(`mid = ? AND tid = ? AND settle_flag = ?`, mid, tid, 0).
 				Updates(&Transactions{SettleFlag: 1, SettledAt: time.Now()})
 	
 	return result.Error

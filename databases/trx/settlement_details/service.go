@@ -33,6 +33,7 @@ type CreateSettleDetailParams struct {
 	STANIssuer				string
 	Rrn						string
 	Trace               	string
+	Batch					string
 	ISO8583Request      	string
 	ISO8583RequestIssuer	string
 	ResponseCode        	string
@@ -45,6 +46,7 @@ type CreateSettleDetailParams struct {
 	ISO8583Response     	string
 	ISO8583ResponseIssuer 	string
 	IssuerID            	int64
+	Signature				string
 	VoidID              	string
 	BatchUFlag          	int64
 	CutOff					string
@@ -79,6 +81,7 @@ func (s Service) CreateSettleDetail(ctx context.Context, settleType string, para
 		Stan:                params.STAN,
 		StanIssuer: 		 params.STANIssuer,
 		Trace:               params.Trace,
+		Batch: 				 params.Batch,
 		IsoRequest:      	 params.ISO8583Request,
 		IsoRequestIssuer:  	 params.ISO8583RequestIssuer,
 		ResponseCode:        params.ResponseCode,
@@ -91,6 +94,7 @@ func (s Service) CreateSettleDetail(ctx context.Context, settleType string, para
 		IsoResponse:     	 params.ISO8583Response,
 		IsoResponseIssuer: 	 params.ISO8583ResponseIssuer,
 		IssuerID:            params.IssuerID,
+		Signature: 			 params.Signature,
 		Status:              status,
 		VoidID:              params.VoidID,
 		CutOff: 			 params.CutOff,

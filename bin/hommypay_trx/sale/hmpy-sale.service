@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Sale Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/sale
+ExecStart=/home/rm/projects/hommypay_trx/sale/hommypay-trx-sale
+
+[Install]
+WantedBy=multi-user.target

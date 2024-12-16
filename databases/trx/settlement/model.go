@@ -25,6 +25,7 @@ type Settlement struct {
 	PosSaleAmount    int64     `json:"pos_sale_amount"`
 	PosRefundCount   int64     `json:"pos_refund_count"`
 	PosRefundAmount  int64     `json:"pos_refund_amount"`
+	Signature		 string	   `json:"signature"`
 	ClearingFlag     int64     `json:"clearing_flag"`
 	CreatedAt        time.Time `gorm:"autoCreateTime:false" json:"created_at"`
 	UpdatedAt        time.Time `gorm:"autoUpdateTime:false" json:"updated_at"`

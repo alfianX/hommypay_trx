@@ -1,0 +1,48 @@
+[10:11:34] - Fds check: Send fds: Post "http://localhost:90/fds_rm/apiFDS.php": dial tcp [::1]:90: connectex: No connection could be made because the target machine actively refused it.
+
+[10:12:40] - Create signature: open keys/rsa_private.key: The system cannot find the path specified.
+
+[10:57:15] - Save settle detail: Error 1406 (22001): Data too long for column 'track_data' at row 1
+
+[11:51:59] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:04] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:09] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:14] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:19] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:24] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:29] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:34] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:39] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:44] - Cron AR -> Get data auto reversal: Error 1054 (42S22): Unknown column 'code_origin' in 'where clause'
+
+[11:52:57] - Cron AR -> read tcp 127.0.0.1:52541->127.0.0.1:4567: i/o timeout
+
+[11:53:02] - Cron AR -> read tcp 127.0.0.1:52543->127.0.0.1:4567: i/o timeout
+
+[11:53:07] - Cron AR -> read tcp 127.0.0.1:52549->127.0.0.1:4567: i/o timeout
+
+[11:53:12] - Cron AR -> read tcp 127.0.0.1:52551->127.0.0.1:4567: i/o timeout
+
+[11:55:58] - Cron AR -> read tcp 127.0.0.1:52584->127.0.0.1:4567: i/o timeout
+
+[11:56:43] - Cron AR -> read tcp 127.0.0.1:52603->127.0.0.1:4567: i/o timeout
+
+[11:57:03] - Cron AR -> read tcp 127.0.0.1:52614->127.0.0.1:4567: i/o timeout
+
+[11:57:28] - Cron AR -> read tcp 127.0.0.1:52627->127.0.0.1:4567: i/o timeout
+
+[11:58:21] - Cron AR -> read tcp 127.0.0.1:52651->127.0.0.1:4567: i/o timeout
+
+[11:59:59] - Cron AR -> read tcp 127.0.0.1:52689->127.0.0.1:4567: i/o timeout
+
+[12:00:50] - Cron AR -> Save reversal log: Error 1146 (42S02): Table 'hommypay_trx.reversal_logs' doesn't exist
+

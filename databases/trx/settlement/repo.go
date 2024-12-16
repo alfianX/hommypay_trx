@@ -35,6 +35,7 @@ func (r Repo) CreateSettle(ctx context.Context, entity *Settlement) (int64, erro
 		"pos_sale_amount",
 		"pos_refund_count",
 		"pos_refund_amount",
+		"signature",
 		"created_at",
 	).Create(&entity)
 

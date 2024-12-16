@@ -1,0 +1,12 @@
+[Unit]
+Description=Hommypay Cron Service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/rm/projects/hommypay_trx/cron
+ExecStart=/home/rm/projects/hommypay_trx/cron/hommypay-trx-cron
+
+[Install]
+WantedBy=multi-user.target

@@ -84,16 +84,20 @@ func (cs *CronService) AutoReversal() {
 						ret, res := h.SendHost(issuerService, isoReversal, cs.config.TimeoutTrx)
 						if ret != 0 {
 							if ret == -4 {
-								err := cs.transactionService.UpdateTOReversalFlag(context.Background(), row.TransactionID)
-								if err != nil {
-									h.ErrorLog("Cron AR -> Update reversal flag TO: " + err.Error())
-									continue
-								}
+								if row.RepeatCount < 3 {
+									err := cs.transactionService.UpdateTOReversalFlag(context.Background(), row.TransactionID)
+									if err != nil {
+										h.ErrorLog("Cron AR -> Update reversal flag TO: " + err.Error())
+										continue
+									}
 
-								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID)
-								if err != nil {
-									h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
-									continue
+									repeatCount := row.RepeatCount + 1
+
+									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+									if err != nil {
+										h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
+										continue
+									}
 								}
 							}
 							h.ErrorLog("Cron AR -> " + res)
@@ -143,16 +147,20 @@ func (cs *CronService) AutoReversal() {
 
 						if err != nil {
 							if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
-								err := cs.transactionService.UpdateTOReversalFlag(context.Background(), row.TransactionID)
-								if err != nil {
-									h.ErrorLog("Cron AR -> Update reversal flag TO: " + err.Error())
-									continue
-								}
+								if row.RepeatCount < 3 {
+									err := cs.transactionService.UpdateTOReversalFlag(context.Background(), row.TransactionID)
+									if err != nil {
+										h.ErrorLog("Cron AR -> Update reversal flag TO: " + err.Error())
+										continue
+									}
 
-								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID)
-								if err != nil {
-									h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
-									continue
+									repeatCount := row.RepeatCount + 1
+
+									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+									if err != nil {
+										h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
+										continue
+									}
 								}
 							}
 							h.ErrorLog("Cron AR -> " + err.Error())

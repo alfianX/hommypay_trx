@@ -240,7 +240,7 @@ func HSMDecrypt(IPPORT string, zek string, data string) (string, error) {
 }
 
 func CreateSignature(tid, mid, email, transactionDate, trace, approvalCode string) (string, error) {
-	filename := "keys/rsa_private.key"
+	filename := "rsa/rsa_private.key"
 	pem, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
