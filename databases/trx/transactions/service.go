@@ -72,6 +72,12 @@ type CheckStanParams struct {
 	STAN 	string
 }
 
+type CheckDataSettleParams struct {
+	TID		string
+	MID		string
+	Batch 	string
+}
+
 func (s Service) CheckData(ctx context.Context, params CheckDataTrxParams) (int64, error) {
 	entity := Transactions{
 		TransactionType: "01",
@@ -278,18 +284,33 @@ func (s Service) UpdateVoidTrx(ctx context.Context, params UpdateVoidParams) err
 	return err
 }
 
-func (s Service) GetSettleTotal(ctx context.Context, mid string, tid string, settleType string) (int64, int64, error) {
+func (s Service) UpdateTrx(ctx context.Context, id int64, responseCode string) error {
+	
+	entity := Transactions{
+		ID:              id,
+		ResponseCode:    responseCode,
+	}
+
+	err := s.repo.UpdateTrx(ctx, &entity)
+	if err != nil {
+		return err
+	}
+	
+	return err
+}
+
+func (s Service) GetSettleTotal(ctx context.Context, mid, tid, batch, settleType string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var err error
 
 	if settleType == "NORMAL" {
-		totalTransaction, totalAmount, err = s.repo.GetSettleTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetSettleTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
 	} else {
-		totalTransaction, totalAmount, err = s.repo.GetSettleBatchTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetSettleBatchTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -297,18 +318,18 @@ func (s Service) GetSettleTotal(ctx context.Context, mid string, tid string, set
 	return totalTransaction, totalAmount, nil
 }
 
-func (s Service) GetSaleTotal(ctx context.Context, mid string, tid string, settleType string) (int64, int64, error) {
+func (s Service) GetSaleTotal(ctx context.Context, mid, tid, batch, settleType string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var err error
 
 	if settleType == "NORMAL" {
-		totalTransaction, totalAmount, err = s.repo.GetSaleTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetSaleTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
 	} else {
-		totalTransaction, totalAmount, err = s.repo.GetSaleBatchTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetSaleBatchTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -316,18 +337,18 @@ func (s Service) GetSaleTotal(ctx context.Context, mid string, tid string, settl
 	return totalTransaction, totalAmount, nil
 }
 
-func (s Service) GetVoidTotal(ctx context.Context, mid string, tid string, settleType string) (int64, int64, error) {
+func (s Service) GetVoidTotal(ctx context.Context, mid, tid, batch, settleType string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var err error
 
 	if settleType == "NORMAL" {
-		totalTransaction, totalAmount, err = s.repo.GetVoidTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetVoidTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
 	} else {
-		totalTransaction, totalAmount, err = s.repo.GetVoidBatchTotal(ctx, mid, tid)
+		totalTransaction, totalAmount, err = s.repo.GetVoidBatchTotal(ctx, mid, tid, batch)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -335,8 +356,8 @@ func (s Service) GetVoidTotal(ctx context.Context, mid string, tid string, settl
 	return totalTransaction, totalAmount, nil
 }
 
-func (s Service) GetDataTrx(ctx context.Context, mid string, tid string) ([]Transactions, error) {
-	data, err := s.repo.GetDataTrx(ctx, mid, tid)
+func (s Service) GetDataTrx(ctx context.Context, mid, tid, batch string) ([]Transactions, error) {
+	data, err := s.repo.GetDataTrx(ctx, mid, tid, batch)
 
 	if err != nil {
 		return nil, err
@@ -359,9 +380,9 @@ func (s Service) UpdateReversal(ctx context.Context, id int64) error {
 	return err
 }
 
-func (s Service) UpdateSettleFlag(ctx context.Context, mid string, tid string) error {
+func (s Service) UpdateSettleFlag(ctx context.Context, mid, tid, batch string) error {
 
-	err := s.repo.UpdateSettleFlag(ctx, mid, tid)
+	err := s.repo.UpdateSettleFlag(ctx, mid, tid, batch)
 	if err != nil {
 		return err
 	}
@@ -447,6 +468,7 @@ func (s Service) CheckBatchDataTrx(ctx context.Context, params CheckDataTrxParam
 		TransactionDate: params.TransactionDate,
 		Stan:            params.STAN,
 		Trace:           params.Trace,
+		Batch: 			 params.Batch,
 	}
 
 	id, err := s.repo.CheckBatchDataTrx(ctx, &entity)
@@ -495,4 +517,19 @@ func (s *Service) DeleteTrx(ctx context.Context, id int64) error {
 	err := s.repo.DeleteTrx(ctx, &entity)
 
 	return err
+}
+
+func (s Service) CheckDataSettle(ctx context.Context, params CheckDataSettleParams) (int64, error) {
+	entity := Transactions{
+		Mid: params.MID,
+		Tid: params.TID,
+		Batch: params.Batch,
+	}
+
+	count, err := s.repo.CheckDataSettle(ctx, &entity)
+	if err != nil {
+		return 0, nil
+	}
+
+	return count, nil
 }

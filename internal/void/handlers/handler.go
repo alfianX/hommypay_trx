@@ -8,7 +8,6 @@ import (
 	"github.com/alfianX/hommypay_trx/databases/param/issuer"
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
-	transactiondata "github.com/alfianX/hommypay_trx/databases/trx/transaction_data"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -19,7 +18,6 @@ type service struct {
 	logger              	*logrus.Logger
 	router              	*gin.Engine
 	config					configs.Config
-	transactionDataService 	transactiondata.Service
 	binRangeService     	binrange.Service
 	hsmConfigService    	hsmconfig.Service
 	keyConfigService    	keyconfig.Service
@@ -34,7 +32,6 @@ func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *g
 		logger:              lg,
 		router:              rtr,
 		config: 			 cnf,
-		transactionDataService: transactiondata.NewService(transactiondata.NewRepo(dbTrx)),
 		binRangeService:     binrange.NewService(binrange.NewRepo(dbParam)),
 		hsmConfigService:    hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
 		keyConfigService:    keyconfig.NewService(keyconfig.NewRepo(dbParam)),

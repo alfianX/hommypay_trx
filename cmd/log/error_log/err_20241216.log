@@ -15,3 +15,5 @@
 
 [10:44:15] - Send to microservice: Send to host: dial tcp 127.0.0.1:4568: connectex: No connection could be made because the target machine actively refused it.
 
+[14:09:44] - Fds response: data tidak sesuai, panjang pan kurang dari 16 atau lebih dari 19
+

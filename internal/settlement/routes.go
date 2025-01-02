@@ -14,4 +14,5 @@ func RegisterRoutes(r *gin.Engine, lg *logrus.Logger, cnf configs.Config, dbTrx 
 	r.Use(handler.MiddlewareLogger())
 	r.GET("/healthz", handler.Health)
 	r.POST("/settlement", handler.Settlement)
+	r.POST("/manual-settlement", handler.Settlement)
 }

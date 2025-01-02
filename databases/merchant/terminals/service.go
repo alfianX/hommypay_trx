@@ -1,6 +1,10 @@
 package terminals
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"strconv"
+)
 
 type Service struct {
 	repo Repo
@@ -28,4 +32,25 @@ func (s Service) GetEmailMerchant(ctx context.Context, tid string, mid string) (
 	}
 
 	return email, nil
+}
+
+func (s Service) UpdateBatch(ctx context.Context, tid, mid string) error {
+	var batch string
+	
+	batch, err := s.repo.GetBatch(ctx, tid, mid)
+	if err != nil {
+		return err
+	}
+
+	batchInt, err := strconv.Atoi(batch)
+	if err != nil {
+		return err
+	}
+
+	batchInt = batchInt + 1
+	batchStr := fmt.Sprintf("%06d", batchInt)
+
+	err = s.repo.UpdateBatch(ctx, tid, mid, batchStr)
+
+	return err
 }

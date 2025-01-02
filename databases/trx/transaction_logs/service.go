@@ -12,17 +12,17 @@ func NewService(r Repo) Service {
 	}
 }
 
-func (s Service) CreateLogTrx(ctx context.Context, mid string, tid string) error {
+func (s Service) CreateLogTrx(ctx context.Context, mid, tid, batch string) error {
 	tx := s.repo.Db.Begin()
 	
 	defer tx.Rollback()
 
-	err := s.repo.CreateLogTrx(ctx, mid, tid)
+	err := s.repo.CreateLogTrx(ctx, mid, tid, batch)
 	if err != nil {
 		return err
 	}
 
-	err = s.repo.ClearTrx(ctx, mid, tid)
+	err = s.repo.ClearTrx(ctx, mid, tid, batch)
 	if err != nil {
 		return err
 	}

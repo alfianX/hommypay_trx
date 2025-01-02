@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/alfianX/hommypay_trx/databases/merchant/terminals"
 	hsmconfig "github.com/alfianX/hommypay_trx/databases/param/hsm_config"
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
 	terminalkeys "github.com/alfianX/hommypay_trx/databases/param/terminal_keys"
@@ -15,14 +16,16 @@ type service struct {
 	hsmConfigService    hsmconfig.Service
 	keyConfigService    keyconfig.Service
 	terminalKeysService terminalkeys.Service
+	terminalService		terminals.Service
 }
 
-func NewHandler(lg *logrus.Logger, rtr *gin.Engine, dbParam *gorm.DB) service {
+func NewHandler(lg *logrus.Logger, rtr *gin.Engine, dbParam, dbMerchant *gorm.DB) service {
 	return service{
 		logger:              lg,
 		router:              rtr,
 		hsmConfigService:    hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
 		keyConfigService:    keyconfig.NewService(keyconfig.NewRepo(dbParam)),
 		terminalKeysService: terminalkeys.NewService(terminalkeys.NewRepo(dbParam)),
+		terminalService: terminals.NewService(terminals.NewRepo(dbMerchant)),
 	}
 }

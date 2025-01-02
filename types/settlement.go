@@ -5,8 +5,8 @@ type SettlementRequest struct {
 	PaymentInformation struct {
 		TID        string `json:"tid" binding:"required"`
 		MID        string `json:"mid" binding:"required"`
-		STAN       string `json:"stan" binding:"required"`
-		Trace      string `json:"trace" binding:"required"`
+		STAN       string `json:"stan"`
+		Trace      string `json:"trace"`
 		Batch      string `json:"batch" binding:"required"`
 		SettleDate string `json:"settleDate" binding:"required"`
 	} `json:"paymentInformation" binding:"required"`

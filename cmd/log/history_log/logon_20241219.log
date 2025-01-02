@@ -1,0 +1,12 @@
+[09:44:24] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"824020000000064","tid":"60230001"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","message":"Approved","key":"00406E723957D424C33CF82BA21D85AA37BB75F70FF6E6B70964FC53543DC7447A5A"}
+[09:45:54] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"824020000000064","tid":"60230001"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","message":"Approved","key":"0040FBA37C36C0DB8A81C1E4641D013CBF7E56DB9405445C61BB67E502B524FC7FAE"}
+[09:47:29] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"824020000000064","tid":"60230001"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","message":"Approved","key":"0040402D2909848BDF95823A21473E28AB4F5C3189DCC55EDA29C00EFE15CAB20CAC"}
+[10:01:02] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"824020000000064","tid":"60230001"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","message":"Approved","key":"00406FBDD148A5DCF1895DE6EC3D77EA136C6D0D0125DCC50AB8CB5E325859425E38"}

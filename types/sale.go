@@ -14,7 +14,7 @@ type SaleRequest struct {
 		KSN             string `json:"ksn"`
 	} `json:"paymentInformation" binding:"required"`
 	CardInformation struct {
-		AID        string `json:"aid" binding:"required"`
+		AID        string `json:"aid"`
 		PAN        string `json:"pan" binding:"required,min=16,max=19,numeric"`
 		Expiry     string `json:"expiry"`
 		TrackData2 string `json:"trackData" binding:"required"`

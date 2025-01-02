@@ -29,6 +29,7 @@ type Settlement struct {
 	ClearingFlag     int64     `json:"clearing_flag"`
 	CreatedAt        time.Time `gorm:"autoCreateTime:false" json:"created_at"`
 	UpdatedAt        time.Time `gorm:"autoUpdateTime:false" json:"updated_at"`
+	ProcessSettle	 string	   `json:"process_settle"`
 }
 
 func (Settlement) TableName() string {

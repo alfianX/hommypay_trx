@@ -26,6 +26,7 @@ func (s Service) SaveTPK(ctx context.Context, tid string, tpk string) error {
 	} else {
 		entity := TerminalKeys{
 			Tid: tid,
+			KeyType: "TPK",
 			Value: tpk,
 			CreatedAt: time.Now(),
 		}

@@ -34,6 +34,7 @@ type CreateSettleParams struct {
 	PosVoidCount     int64
 	PosVoidAmount    int64
 	Signature		 string
+	ProcessSettle	 string
 }
 
 func (s Service) CreateSettle(ctx context.Context, settleType string, params CreateSettleParams) (int64, error) {
@@ -61,6 +62,7 @@ func (s Service) CreateSettle(ctx context.Context, settleType string, params Cre
 		PosSaleAmount:    params.PosSaleAmount,
 		Signature: 		  params.Signature,
 		CreatedAt: 		  time.Now(),
+		ProcessSettle: 	  params.ProcessSettle,
 	}
 
 	id, err := s.repo.CreateSettle(ctx, &entity)

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
-	transactiondata "github.com/alfianX/hommypay_trx/databases/trx/transaction_data"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	h "github.com/alfianX/hommypay_trx/helper"
 	"github.com/alfianX/hommypay_trx/types"
@@ -82,11 +81,9 @@ func (s *service) Reversal(c *gin.Context) {
                 out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
             }
 			
-			// h.ErrorLog(err.Error())
 			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
-		// h.ErrorLog(err.Error())
 		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
@@ -120,6 +117,7 @@ func (s *service) Reversal(c *gin.Context) {
 	code := req.PosTerminal.Code
 	keyMode := req.PosTerminal.KeyMode
 	ISO8583 := req.ISO8583
+	panMask := h.MaskPan(pan)
 	var issuerID int64
 	var lat string
 	var long string
@@ -239,17 +237,12 @@ func (s *service) Reversal(c *gin.Context) {
 		return
 	}
 
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "reversal")
+	
 	re := regexp.MustCompile(`\r?\n`)
 	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
 	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	// currentTime := time.Now()
-	// gmtFormat := "15:04:05"
-	// timeString := currentTime.Format(gmtFormat)
-	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	// h.HistoryLog(logMessage, "reversal")
-	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "reversal")
-
+	
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", transactionDate, loc)
 	if err != nil {
@@ -319,16 +312,28 @@ func (s *service) Reversal(c *gin.Context) {
 			dateTimeString := currentTime.Format(dateTimeFormat)
 			transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
-			trxDataReqParams := transactiondata.TrxDataReqParams{
+			trxParams := transactions.CreateTrxParams{
 				TransactionID: transactionID,
-				TransactionType: "41",
-				DataReq: dataRequest,
+				Procode: req.PaymentInformation.Procode,
+				Mid: req.PaymentInformation.MID,
+				Tid: req.PaymentInformation.TID,
+				CardType: cardType,
+				Pan: panMask,
+				PanEnc: req.CardInformation.PAN,
+				TrackData: req.CardInformation.TrackData2,
+				EMVTag: req.CardInformation.EMVTag,
+				Amount: req.PaymentInformation.Amount,
+				TransactionDate: trxDate,
+				Stan: req.PaymentInformation.STAN,
+				Trace: req.PaymentInformation.Trace,
+				Batch: req.PaymentInformation.Batch,
+				TransMode: req.PosTerminal.TransMode,
+				IsoRequest: req.ISO8583,
 				IssuerID: issuerID,
 				Longitude: long,
 				Latitude: lat,
 			}
-
-			id, err := s.transactionDataService.SaveTrxDataReq(c, trxDataReqParams)
+			id, err := s.transactionService.CreateReversalTrx(c, trxParams)
 			if err != nil {
 				h.ErrorLog("Save trx: " + err.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -360,7 +365,7 @@ func (s *service) Reversal(c *gin.Context) {
 
 			payload, err := json.Marshal(dataToSend)
 			if err != nil {
-				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
+				s.transactionService.UpdateTrx(c, id, "E1")
 				h.ErrorLog("JSON marshal data send: " + err.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
@@ -379,8 +384,7 @@ func (s *service) Reversal(c *gin.Context) {
 					extResp, err = h.TcpSendToIssuer(c, s.config, ISO8583, issuerService)
 					
 				}else{
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "I2")
-					// h.ErrorLog("ISO8583 empty!")
+					s.transactionService.UpdateTrx(c, id, "I2")
 					h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I2", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 					return
 				}
@@ -395,17 +399,16 @@ func (s *service) Reversal(c *gin.Context) {
 				if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
 					errRvrsl := s.AutoReversal(c, req, trxID, issuerID, "")
 					if errRvrsl != nil {
-						s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+						s.transactionService.UpdateTrx(c, id, "E1")
 						h.ErrorLog("Save data reversal: " + errRvrsl.Error())
 						h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 						return
 					}
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "T0")
-					// h.ErrorLog("request timeout")
+					s.transactionService.UpdateTrx(c, id, "T0")
 					h.Respond(c, responseError{Status: "TIMEOUT", ResponseCode: "T0", Message: "request timeout"}, http.StatusConflict)
 					return
 				}else{
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E0")
+					s.transactionService.UpdateTrx(c, id, "E0")
 					h.ErrorLog("Send to microservice: " + err.Error())
 					h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E0", Message: "Link down"}, http.StatusConflict)
 					return
@@ -424,7 +427,7 @@ func (s *service) Reversal(c *gin.Context) {
 			if responseCode == "00" {
 				err = s.transactionService.UpdateReversalFlag(c, trxID)
 				if err != nil {
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+					s.transactionService.UpdateTrx(c, id, "E1")
 					h.ErrorLog("Update reversal flag: " + err.Error())
 					h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 					return
@@ -432,18 +435,23 @@ func (s *service) Reversal(c *gin.Context) {
 			}else{
 				errRvrsl := s.AutoReversal(c, req, trxID, issuerID, "")
 				if errRvrsl != nil {
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+					s.transactionService.UpdateTrx(c, id, "E1")
 					h.ErrorLog("Save data reversal: " + errRvrsl.Error())
 					h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 					return
 				}
 			}
 
+			var approvalCode string
+			if extResp["approvalCode"] != nil {
+				approvalCode = extResp["approvalCode"].(string)
+			}
+
 			if extResp["ISO8583"] != nil {
 				ISO8583Res = extResp["ISO8583"].(string)
 				iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
 				if err != nil {
-					s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+					s.transactionService.UpdateTrx(c, id, "E1")
 					h.ErrorLog("ISO res encrypt: " + err.Error())
 					h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 					return
@@ -453,7 +461,7 @@ func (s *service) Reversal(c *gin.Context) {
 		
 			dataResponseByte, err := json.Marshal(extResp)
 			if err != nil {
-				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+				s.transactionService.UpdateTrx(c, id, "E1")
 				h.ErrorLog("Marshal response : " + err.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
@@ -470,17 +478,17 @@ func (s *service) Reversal(c *gin.Context) {
 				h.IssuerLog(logMessage, issuerName)
 			}
 
-			// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-			// h.HistoryLog(logMessage, "reversal")
 			h.HistoryRespLog(dataResponseByte, dateString, timeString, "reversal")
 
-			err = s.transactionDataService.UpdateTrxDataRes(c, transactiondata.TrxDataResParams{
+			err = s.transactionService.UpdateReversalTrx(c, transactions.UpdateSaleParams{
 				ID: id,
-				DataRes: dataResponse,
+				ResponseCode: responseCode,
+				ISO8583Response: iso8583ResEnc,
+				ApprovalCode: approvalCode,
 			})
 
 			if err != nil {
-				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+				s.transactionService.UpdateTrx(c, id, "E1")
 				h.ErrorLog("Update trx: " + err.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return

@@ -1,0 +1,10 @@
+[14:04:15] - Create suspect list: Error 1364 (HY000): Field 'MID' doesn't have a default value
+
+[14:05:28] - Create suspect list: Error 1364 (HY000): Field 'MID' doesn't have a default value
+
+[14:07:15] - Create suspect list: Error 1054 (42S22): Unknown column 'm_id' in 'field list'
+
+[14:09:21] - Create suspect list: Error 1364 (HY000): Field 'mid' doesn't have a default value
+
+[14:12:12] - Create suspect list: Error 1364 (HY000): Field 'mid' doesn't have a default value
+

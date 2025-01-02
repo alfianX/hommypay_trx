@@ -94,15 +94,16 @@ func (r Repo) UpdateReversal(ctx context.Context, entity *Transactions) error {
 	return result.Error
 }
 
-func (r Repo) GetSettleTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetSettleTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND response_code = ? AND
-						reversal_flag != ? AND settle_flag = ? AND void_id IS NULL AND batch_u_flag = ?`,
-						"01", mid, tid, 2, "00", 1, 0, 1).Find(&trx)
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
+						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND void_id IS NULL AND 
+						batch_u_flag = ?`,
+						"01", mid, tid, batch, 2, "00", 1, 0, 1).Find(&trx)
 	
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -112,15 +113,15 @@ func (r Repo) GetSettleTotal(ctx context.Context, mid string, tid string) (int64
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetSettleBatchTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetSettleBatchTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
 						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND void_id IS NULL AND 
-						batch_u_flag = ?`, "01", mid, tid, 2, "00", 1, 0, 2).Find(&trx)
+						batch_u_flag = ?`, "01", mid, tid, batch, 2, "00", 1, 0, 2).Find(&trx)
 
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -130,15 +131,15 @@ func (r Repo) GetSettleBatchTotal(ctx context.Context, mid string, tid string) (
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetSaleTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetSaleTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
 						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND void_id IS NULL AND 
-						batch_u_flag = ?`, "01", mid, tid, 2, "00", 1, 0, 1).Find(&trx)
+						batch_u_flag = ?`, "01", mid, tid, batch, 2, "00", 1, 0, 1).Find(&trx)
 
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -148,15 +149,15 @@ func (r Repo) GetSaleTotal(ctx context.Context, mid string, tid string) (int64, 
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetVoidTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetVoidTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
 						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND 
-						batch_u_flag = ?`, "31", mid, tid, 2, "00", 1, 0, 1).Find(&trx)
+						batch_u_flag = ?`, "31", mid, tid, batch, 2, "00", 1, 0, 1).Find(&trx)
 
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -166,15 +167,15 @@ func (r Repo) GetVoidTotal(ctx context.Context, mid string, tid string) (int64, 
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetSaleBatchTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetSaleBatchTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
 						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND 
-						batch_u_flag = ?`, "01", mid, tid, 2, "00", 1, 0, 2).Find(&trx)
+						batch_u_flag = ?`, "01", mid, tid, batch, 2, "00", 1, 0, 2).Find(&trx)
 
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -184,15 +185,15 @@ func (r Repo) GetSaleBatchTotal(ctx context.Context, mid string, tid string) (in
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetVoidBatchTotal(ctx context.Context, mid string, tid string) (int64, int64, error) {
+func (r Repo) GetVoidBatchTotal(ctx context.Context, mid, tid, batch string) (int64, int64, error) {
 	var totalTransaction int64
 	var totalAmount int64
 	var trx []Transactions
 
 	result := r.Db.WithContext(ctx).Select("amount").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
+				Where(`transaction_type = ? AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
 						response_code = ? AND reversal_flag != ? AND settle_flag = ? AND 
-						batch_u_flag = ?`, "31", mid, tid, 2, "00", 1, 0, 2).Find(&trx)
+						batch_u_flag = ?`, "31", mid, tid, batch, 2, "00", 1, 0, 2).Find(&trx)
 
 	for _, rows := range trx {
 		totalAmount = totalAmount + rows.Amount
@@ -202,20 +203,20 @@ func (r Repo) GetVoidBatchTotal(ctx context.Context, mid string, tid string) (in
 	return totalTransaction, totalAmount, result.Error
 }
 
-func (r Repo) GetDataTrx(ctx context.Context, mid string, tid string) ([]Transactions, error) {
+func (r Repo) GetDataTrx(ctx context.Context, mid, tid, batch string) ([]Transactions, error) {
 	var allData []Transactions
 
 	result := r.Db.WithContext(ctx).Order("transaction_date asc").
-				Where(`transaction_type = ? AND mid = ? AND tid = ? AND status = ? AND 
-				response_code = ? AND reversal_flag != ? AND settle_flag = ? AND void_id IS NULL`,
-				"01",mid,tid,2,"00",1,0).Find(&allData)
+				Where(`transaction_type IN ('01', '31') AND mid = ? AND tid = ? AND batch = ? AND status = ? AND 
+				response_code = ? AND reversal_flag != ? AND settle_flag = ?`,
+				mid,tid,batch,2,"00",1,0).Find(&allData)
 	
 	return allData, result.Error
 }
 
-func (r Repo) UpdateSettleFlag(ctx context.Context, mid string, tid string) error {
+func (r Repo) UpdateSettleFlag(ctx context.Context, mid, tid, batch string) error {
 	result := r.Db.WithContext(ctx).Model(&Transactions{}).
-				Where(`mid = ? AND tid = ? AND settle_flag = ?`, mid, tid, 0).
+				Where(`mid = ? AND tid = ? AND batch = ? AND settle_flag = ?`, mid, tid, batch, 0).
 				Updates(&Transactions{SettleFlag: 1, SettledAt: time.Now()})
 	
 	return result.Error
@@ -269,9 +270,11 @@ func (r Repo) UpdateReversalVoidID(ctx context.Context, trxId string) error {
 
 func (r Repo) CheckBatchDataTrx(ctx context.Context, entity *Transactions) (int64, error) {
 	result := r.Db.WithContext(ctx).Select("id").
-				Where(`transaction_type = ? AND procode = ? AND mid = ? AND tid = ? AND amount = ? AND transaction_date = ? AND trace = ? AND 
+				Where(`transaction_type = ? AND procode = ? AND mid = ? AND tid = ? AND amount = ? AND 
+				transaction_date = ? AND trace = ? AND batch = ? AND
 				status = ? AND response_code = ? AND reversal_flag != ?`,
-				entity.TransactionType, entity.Procode, entity.Mid, entity.Tid, entity.Amount, entity.TransactionDate, entity.Trace, 2, "00", 1).
+				entity.TransactionType, entity.Procode, entity.Mid, entity.Tid, entity.Amount, 
+				entity.TransactionDate, entity.Trace, entity.Batch, 2, "00", 1).
 				Find(&entity)
 
 	return entity.ID, result.Error
@@ -314,4 +317,14 @@ func (r Repo) DeleteTrx(ctx context.Context, entity *Transactions) error {
 	result := r.Db.WithContext(ctx).Model(&entity).Delete(&entity)
 
 	return result.Error
+}
+
+func (r Repo) CheckDataSettle(ctx context.Context, entity *Transactions) (int64, error) {
+	var count int64
+
+	result := r.Db.WithContext(ctx).Model(&entity).
+				Where(`mid = ? AND tid = ? AND batch = ?`, 
+						entity.Mid, entity.Tid, entity.Batch).Count(&count)
+
+	return count, result.Error
 }

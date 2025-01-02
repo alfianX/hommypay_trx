@@ -80,6 +80,17 @@ func (s service) Logon(c *gin.Context) {
 	// h.HistoryLog(logMessage, "logon")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "logon")
 
+	count, err := s.terminalService.CheckTidMid(c, req.DeviceInformation.TID, req.DeviceInformation.MID)
+	if err != nil {
+		h.ErrorLog("Check TID MID: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if count == 0 {
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I7", Message: "TID MID not registered!"}, http.StatusBadRequest)
+		return
+	}
 
 	tmk, err := s.keyConfigService.GetTMK(c)
 	if err != nil {

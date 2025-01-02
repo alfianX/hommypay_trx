@@ -17,10 +17,10 @@ func NewRepo(db *gorm.DB) Repo {
 func (r Repo) CreateSuspect(ctx context.Context, entity *SuspectList) error {
 	result := r.Db.WithContext(ctx).Select(
 		"id",
-		"MID",
-		"TID",
+		"mid",
+		"tid",
 		"trace",
-		"PAN",
+		"pan",
 		"date",
 		"status",
 		"data",

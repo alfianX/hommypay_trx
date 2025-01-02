@@ -1,0 +1,3 @@
+[14:09:06] - path:/logon, method: POST,
+ requestBody: {"deviceInformation":{"mid":"824020000000064","tid":"60230001"}}
+ respondStatus: 200, respondBody: {"status":"SUCCESS","responseCode":"00","message":"Approved","key":"0040ABF31F035CC5B397A098C9CBA3A8AE19CC1233EF1771BDD88A9ADCE09F47055C"}

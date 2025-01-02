@@ -12,7 +12,6 @@ import (
 
 	suspectlist "github.com/alfianX/hommypay_trx/databases/param/suspect_list"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
-	transactiondata "github.com/alfianX/hommypay_trx/databases/trx/transaction_data"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	h "github.com/alfianX/hommypay_trx/helper"
 	"github.com/alfianX/hommypay_trx/pkg/round_robin"
@@ -80,6 +79,7 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	req := types.SaleRequest{}
+	reqFds := types.SaleRequest{}
 	reqLog := types.SaleLogRequest{}
 
 	err := h.Decode(c, &req)
@@ -91,11 +91,9 @@ func (s service) Sale(c *gin.Context) {
                 out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
             }
 			
-			// h.ErrorLog(err.Error())
 			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
-		// h.ErrorLog(err.Error())
 		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I0", Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
@@ -109,6 +107,11 @@ func (s service) Sale(c *gin.Context) {
 		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
 		return
 	}
+
+	reqFds.PaymentInformation = req.PaymentInformation
+	reqFds.CardInformation = req.CardInformation
+	reqFds.PosTerminal = req.PosTerminal
+	reqFds.ISO8583 = req.ISO8583
 
 	procode := req.PaymentInformation.Procode
 	tid := req.PaymentInformation.TID
@@ -144,6 +147,7 @@ func (s service) Sale(c *gin.Context) {
 	var emvTagEnc string
 	var pinBlockEnc string
 	var iso8583Enc string
+	var appName string
 
 	if c.GetHeader("X-LATITUDE") != "" {
 		lat = c.GetHeader("X-LATITUDE")
@@ -255,12 +259,11 @@ func (s service) Sale(c *gin.Context) {
 		return
 	}
 
+	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "sale")
+
 	re := regexp.MustCompile(`\r?\n`)
 	dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
 	dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "sale")
 
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", transactionDate, loc)
@@ -314,7 +317,7 @@ func (s service) Sale(c *gin.Context) {
 		return
 	}
 
-	payloadFds, err := json.Marshal(req)
+	payloadFds, err := json.Marshal(reqFds)
 	if err != nil {
 		h.ErrorLog("JSON marshal data fds send: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -328,6 +331,11 @@ func (s service) Sale(c *gin.Context) {
 		return
 	}
 
+	if responseFds == "1" {
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I5", Message: detailMsgFds}, http.StatusBadRequest)
+		return
+	}
+
 	if responseFds == "3" || responseFds == "4" {
 		h.ErrorLog("Fds response: " + msgFds + ", " + detailMsgFds)
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
@@ -335,7 +343,6 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	if responseFds == "2" {
-		// fmt.Println(msgFds + ", " + detailMsgFds)
 		err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
 			Mid: mid,
 			Tid: tid,
@@ -352,23 +359,15 @@ func (s service) Sale(c *gin.Context) {
 		}
 	}
 
-	// countMerchant, err := s.terminalService.CheckTidMid(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
-	// if err != nil {
-	// 	h.ErrorLog("Check TID MID: " + err.Error())
-	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-	// 	return
-	// }
-
-	// if countMerchant == 0 {
-	// 	h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I6", Message: "TID MID not found!"}, http.StatusBadRequest)
-	// 	return
-	// }
-
-	appName, err := s.aidService.GetAppName(c, aid)
-	if err != nil {
-		h.ErrorLog("Get app name: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		return
+	if aid != "" {
+		appName, err = s.aidService.GetAppName(c, aid)
+		if err != nil {
+			h.ErrorLog("Get app name: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+	} else {
+		appName = "NSICCS"
 	}
 
 	if appName == "" {
@@ -418,16 +417,28 @@ func (s service) Sale(c *gin.Context) {
 	dateTimeString := currentTime.Format(dateTimeFormat)
 	transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
-	trxDataReqParams := transactiondata.TrxDataReqParams{
+	trxParams := transactions.CreateTrxParams{
 		TransactionID: transactionID,
-		TransactionType: "01",
-		DataReq: dataRequest,
+		Procode: req.PaymentInformation.Procode,
+		Mid: req.PaymentInformation.MID,
+		Tid: req.PaymentInformation.TID,
+		CardType: cardType,
+		Pan: panMask,
+		PanEnc: req.CardInformation.PAN,
+		TrackData: req.CardInformation.TrackData2,
+		EMVTag: req.CardInformation.EMVTag,
+		Amount: req.PaymentInformation.Amount,
+		TransactionDate: trxDate,
+		Stan: req.PaymentInformation.STAN,
+		Trace: req.PaymentInformation.Trace,
+		Batch: req.PaymentInformation.Batch,
+		TransMode: req.PosTerminal.TransMode,
+		IsoRequest: req.ISO8583,
 		IssuerID: issuerID,
 		Longitude: long,
 		Latitude: lat,
 	}
-
-	id, err := s.transactionDataService.SaveTrxDataReq(c, trxDataReqParams)
+	id, err := s.transactionService.CreateSaleTrx(c, trxParams)
 	if err != nil {
 		h.ErrorLog("Save trx: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -459,7 +470,7 @@ func (s service) Sale(c *gin.Context) {
 
 	payload, err := json.Marshal(dataToSend)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+		s.transactionService.UpdateTrx(c, id, "E1")
 		h.ErrorLog("JSON marshal data send: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -478,7 +489,7 @@ func (s service) Sale(c *gin.Context) {
 			extResp, err = h.TcpSendToIssuer(c, s.config, ISO8583, issuerService)
 			
 		}else{
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "I2")
+			s.transactionService.UpdateTrx(c, id, "I2")
 			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I2", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 			return
 		}
@@ -493,17 +504,16 @@ func (s service) Sale(c *gin.Context) {
 		if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
 			errRvrsl := s.AutoReversal(c, req, transactionID, issuerID, "")
 			if errRvrsl != nil {
-				s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+				s.transactionService.UpdateTrx(c, id, "E1")
 				h.ErrorLog("Save data reversal: " + errRvrsl.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
 			}
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "T0")
-			// h.ErrorLog("request timeout")
+			s.transactionService.UpdateTrx(c, id, "T0")
 			h.Respond(c, responseError{Status: "TIMEOUT", ResponseCode: "T0", Message: "request timeout"}, http.StatusConflict)
 			return
 		}else{
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E0")
+			s.transactionService.UpdateTrx(c, id, "E0")
 			h.ErrorLog("Send to microservice: " + err.Error())
 			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E0", Message: "Link down!"}, http.StatusConflict)
 			return
@@ -526,14 +536,7 @@ func (s service) Sale(c *gin.Context) {
 		ISO8583Res = extResp["ISO8583"].(string)
 		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
 		if err != nil {
-			// errRvrsl := s.AutoReversal(c, req, transactionID, issuerID, responseCode)
-			// if errRvrsl != nil {
-			// 	s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
-			// 	h.ErrorLog("Save data reversal: " + err.Error())
-			// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			// 	return
-			// }
-			s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+			s.transactionService.UpdateTrx(c, id, "E1")
 			h.ErrorLog("ISO res encrypt: " + err.Error())
 			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
@@ -543,14 +546,7 @@ func (s service) Sale(c *gin.Context) {
 
 	dataResponseByte, err := json.Marshal(extResp)
 	if err != nil {
-		// errRvrsl := s.AutoReversal(c, req, transactionID, issuerID, responseCode)
-		// if errRvrsl != nil {
-		// 	s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E6")
-		// 	h.ErrorLog("Save data reversal: " + err.Error())
-		// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E6", Message: "Service Acq Malfunction"}, http.StatusConflict)
-		// 	return
-		// }
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+		s.transactionService.UpdateTrx(c, id, "E1")
 		h.ErrorLog("Marshal response : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -568,12 +564,10 @@ func (s service) Sale(c *gin.Context) {
 	}
 	
 	h.HistoryRespLog(dataRequestByte, dateString, timeString, "sale")
-	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	// h.HistoryLog(logMessage, "sale")
 	
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+		s.transactionService.UpdateTrx(c, id, "E1")
 		h.ErrorLog("Get email merchant : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -581,33 +575,27 @@ func (s service) Sale(c *gin.Context) {
 	
 	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.TransactionDate, req.PaymentInformation.Trace, approvalCode)
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+		s.transactionService.UpdateTrx(c, id, "E1")
 		h.ErrorLog("Create signature: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
-
-	err = s.transactionDataService.UpdateTrxDataRes(c, transactiondata.TrxDataResParams{
+	err = s.transactionService.UpdateSaleTrx(c, transactions.UpdateSaleParams{
 		ID: id,
-		DataRes: dataResponse,
+		ResponseCode: responseCode,
+		ISO8583Response: iso8583ResEnc,
+		ApprovalCode: approvalCode,
 		Signature: signatureFinal,
 	})
 
 	if err != nil {
-		s.transactionDataService.UpdateFlagTrxDataErr(c, id, "E1")
+		s.transactionService.UpdateTrx(c, id, "E1")
 		h.ErrorLog("Update trx: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
-	// select { 
-	// 	case <-c.Request.Context().Done(): 
-	// 	fmt.Println("Client disconnected") 
-	// 	return 
-	// default: 
-	// 	fmt.Fprintln(c.Writer, "Client is still connected") 
-	// }
 	testTimeout := s.config.TestTimeout
 	timeInt := s.config.Timeout
 	if testTimeout == 1 {

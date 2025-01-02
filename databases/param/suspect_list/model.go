@@ -2,10 +2,10 @@ package suspectlist
 
 type SuspectList struct {
 	ID     int64  `json:"id"`
-	Mid    string `json:"MID"`
-	Tid    string `json:"TID"`
+	Mid    string `json:"mid"`
+	Tid    string `json:"tid"`
 	Trace  string `json:"trace"`
-	Pan    string `json:"PAN"`
+	Pan    string `json:"pan"`
 	Date   string `json:"date"`
 	Status string `json:"status"`
 	Data   string `json:"data"`

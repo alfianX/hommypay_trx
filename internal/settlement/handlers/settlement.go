@@ -9,6 +9,7 @@ import (
 	uniqueid "github.com/albinj12/unique-id"
 	"github.com/alfianX/hommypay_trx/databases/trx/settlement"
 	settlementdetails "github.com/alfianX/hommypay_trx/databases/trx/settlement_details"
+	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	h "github.com/alfianX/hommypay_trx/helper"
 	"github.com/alfianX/hommypay_trx/types"
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,8 @@ func (s service) Settlement(c *gin.Context) {
 
 	req := types.SettlementRequest{}
 
+	path := c.Request.URL.Path
+
 	err := h.Decode(c, &req)
 	if err != nil {
 		var ve validator.ValidationErrors
@@ -50,6 +53,7 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
+	var processSettle string
 	settementType := req.SettlementType
 	tid := req.PaymentInformation.TID
 	mid := req.PaymentInformation.MID
@@ -63,6 +67,36 @@ func (s service) Settlement(c *gin.Context) {
 	saleAmount := req.OrderInformation.SaleAmount
 	voidCount := req.OrderInformation.VoidCount
 	voidAmount := req.OrderInformation.VoidAmount
+
+	if path == "/settlement" {
+		processSettle = "NORMAL"
+	} else if path == "/manual-settlement" {
+		processSettle = "MANUAL"
+	}
+
+	countSettle, err := s.transactionService.CheckDataSettle(c, transactions.CheckDataSettleParams{
+		TID: tid,
+		MID: mid,
+		Batch: batch,
+	})
+	if err != nil {
+		h.ErrorLog("Check data settle : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if countSettle == 0 {
+		responseOK := response{
+			Status: "SUCCESS",
+			ResponseCode: "00",
+			Message: "Approved",
+			RefNo: "",
+			Signature: "",
+		}
+	
+		h.Respond(c, responseOK, http.StatusOK)
+		return
+	}
 
 	currentTime := time.Now()
 	timeFormat := "15:04:05"
@@ -88,7 +122,7 @@ func (s service) Settlement(c *gin.Context) {
 	// h.HistoryLog(logMessage, "settlement")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "settlement")
 
-	totalTransactionDB, totalAmountDB, err := s.transactionService.GetSettleTotal(c, mid, tid, settementType)
+	totalTransactionDB, totalAmountDB, err := s.transactionService.GetSettleTotal(c, mid, tid, batch, settementType)
 	if err != nil {
 		h.ErrorLog("Get settle total: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -102,7 +136,7 @@ func (s service) Settlement(c *gin.Context) {
 		}
 	}
 
-	saleCountDB, saleAmountDB, err := s.transactionService.GetSaleTotal(c, mid, tid, settementType)
+	saleCountDB, saleAmountDB, err := s.transactionService.GetSaleTotal(c, mid, tid, batch, settementType)
 	if err != nil {
 		h.ErrorLog("Get sale total: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -116,7 +150,7 @@ func (s service) Settlement(c *gin.Context) {
 		}
 	}
 
-	voidCountDB, voidAmountDB, err := s.transactionService.GetVoidTotal(c, mid, tid, settementType)
+	voidCountDB, voidAmountDB, err := s.transactionService.GetVoidTotal(c, mid, tid, batch, settementType)
 	if err != nil {
 		h.ErrorLog("Get void total: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -170,6 +204,7 @@ func (s service) Settlement(c *gin.Context) {
 		PosVoidCount: voidCount,
 		PosVoidAmount: voidAmount,
 		Signature: signatureFinal,
+		ProcessSettle: processSettle,
 	})
 	if err != nil {
 		h.ErrorLog("Save settle: " + err.Error())
@@ -177,7 +212,7 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	dataTrx, err := s.transactionService.GetDataTrx(c, mid, tid)
+	dataTrx, err := s.transactionService.GetDataTrx(c, mid, tid, batch)
 	if err != nil {
 		h.ErrorLog("Get data transactions: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -214,6 +249,7 @@ func (s service) Settlement(c *gin.Context) {
 			Rrn: data.Rrn,
 			Trace: data.Trace,
 			Batch: data.Batch,
+			TransMode: data.TransMode,
 			ISO8583Request: data.IsoRequest,
 			ISO8583RequestIssuer: data.IsoRequestIssuer,
 			ResponseCode: data.ResponseCode,
@@ -239,16 +275,23 @@ func (s service) Settlement(c *gin.Context) {
 		i++
 	}
 
-	err = s.transactionService.UpdateSettleFlag(c, mid, tid)
+	err = s.transactionService.UpdateSettleFlag(c, mid, tid, batch)
 	if err != nil {
 		h.ErrorLog("Update settle flag: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
-	err = s.transactionLogService.CreateLogTrx(c, mid, tid)
+	err = s.transactionLogService.CreateLogTrx(c, mid, tid, batch)
 	if err != nil {
 		h.ErrorLog("Save log trx: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	err = s.terminalService.UpdateBatch(c, tid, mid)
+	if err != nil {
+		h.ErrorLog("Update Batch: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}

@@ -34,6 +34,7 @@ type CreateSettleDetailParams struct {
 	Rrn						string
 	Trace               	string
 	Batch					string
+	TransMode				string
 	ISO8583Request      	string
 	ISO8583RequestIssuer	string
 	ResponseCode        	string
@@ -82,6 +83,7 @@ func (s Service) CreateSettleDetail(ctx context.Context, settleType string, para
 		StanIssuer: 		 params.STANIssuer,
 		Trace:               params.Trace,
 		Batch: 				 params.Batch,
+		TransMode: 			 params.TransMode,
 		IsoRequest:      	 params.ISO8583Request,
 		IsoRequestIssuer:  	 params.ISO8583RequestIssuer,
 		ResponseCode:        params.ResponseCode,
