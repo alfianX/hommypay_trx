@@ -7,6 +7,7 @@ import (
 	"time"
 
 	uniqueid "github.com/albinj12/unique-id"
+	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/settlement"
 	settlementdetails "github.com/alfianX/hommypay_trx/databases/trx/settlement_details"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
@@ -185,7 +186,14 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	id, err := s.settlementService.CreateSettle(c, settementType, settlement.CreateSettleParams{
+	tx := s.dbTrx.Begin()
+	if tx.Error != nil {
+		h.ErrorLog("Db transaction begin : " + tx.Error.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	id, err := s.settlementService.CreateSettle(c, tx, settementType, settlement.CreateSettleParams{
 		MID: mid,
 		TID: tid,
 		STAN: stan,
@@ -207,6 +215,7 @@ func (s service) Settlement(c *gin.Context) {
 		ProcessSettle: processSettle,
 	})
 	if err != nil {
+		tx.Rollback()
 		h.ErrorLog("Save settle: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -222,15 +231,42 @@ func (s service) Settlement(c *gin.Context) {
 	i := 1
 	for _, data := range dataTrx {
 		if i == 1 {
-			err = s.settlementService.UpdateFirstSettleDate(c, id, data.TransactionDate)
+			err = s.settlementService.UpdateFirstSettleDate(c, tx, id, data.TransactionDate)
 			if err != nil {
+				tx.Rollback()
 				h.ErrorLog("Update first settle date: " + err.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
 			}
 		}
 
-		err = s.settementDetailService.CreateSettleDetail(c, settementType, settlementdetails.CreateSettleDetailParams{
+		if settementType == "END" && data.BatchUFlag == 1 {
+			err := s.reversalService.SaveDataReversalSettle(c, reversals.SaveDataReversalParams{
+				TransactionID: data.TransactionID,
+				TransactionType: data.TransactionType,
+				Procode: data.Procode,
+				Mid: data.Mid,
+				Tid: data.Tid,
+				Amount: data.Amount,
+				TransactionDate: data.TransactionDate,
+				Stan: data.Stan,
+				StanIssuer: data.StanIssuer,
+				Trace: data.Trace,
+				Batch: data.Batch,
+				IsoRequest: data.IsoRequest,
+				IssuerID: data.IssuerID,
+				ResponseCodeOrg: data.ResponseCode,
+			})
+
+			if err != nil {
+				tx.Rollback()
+				h.ErrorLog("Save auto reversal : " + err.Error())
+				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+				return
+			}
+		}
+
+		err = s.settementDetailService.CreateSettleDetail(c, tx, settementType, settlementdetails.CreateSettleDetailParams{
 			SettlementID: id,
 			TransactionID: data.TransactionID,
 			TransactionType: data.TransactionType,
@@ -250,6 +286,7 @@ func (s service) Settlement(c *gin.Context) {
 			Trace: data.Trace,
 			Batch: data.Batch,
 			TransMode: data.TransMode,
+			BankCode: data.BankCode,
 			ISO8583Request: data.IsoRequest,
 			ISO8583RequestIssuer: data.IsoRequestIssuer,
 			ResponseCode: data.ResponseCode,
@@ -268,6 +305,7 @@ func (s service) Settlement(c *gin.Context) {
 			CutOff: data.SettledDate,
 		})
 		if err != nil {
+			tx.Rollback()
 			h.ErrorLog("Save settle detail: " + err.Error())
 			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
@@ -275,23 +313,50 @@ func (s service) Settlement(c *gin.Context) {
 		i++
 	}
 
-	err = s.transactionService.UpdateSettleFlag(c, mid, tid, batch)
+	err = s.transactionService.UpdateSettleFlag(c, tx, mid, tid, batch)
 	if err != nil {
+		tx.Rollback()
 		h.ErrorLog("Update settle flag: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
-	err = s.transactionLogService.CreateLogTrx(c, mid, tid, batch)
+	err = s.transactionLogService.CreateLogTrx(c, tx, mid, tid, batch)
 	if err != nil {
+		tx.Rollback()
 		h.ErrorLog("Save log trx: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
-	err = s.terminalService.UpdateBatch(c, tid, mid)
+	txMerchant := s.dbMerchant.Begin()
+	if txMerchant.Error != nil {
+		h.ErrorLog("Db merchant transaction begin : " + tx.Error.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	err = s.terminalService.UpdateBatch(c, txMerchant, tid, mid)
 	if err != nil {
+		txMerchant.Rollback()
+		tx.Rollback()
 		h.ErrorLog("Update Batch: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		txMerchant.Rollback()
+		h.ErrorLog("Commit : " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if err := txMerchant.Commit().Error; err != nil {
+		tx.Rollback()
+		txMerchant.Rollback()
+		h.ErrorLog("Commit db merchant : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}

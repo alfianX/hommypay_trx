@@ -205,11 +205,11 @@ func Build(DE map[int]string, MTI string) string {
 				case 0:
 					bitLen = len(DE[I])
 					if len(DE[I])%2 != 0 {
-						bitLen++
-						DE[I] = PadRight(DE[I], bitLen, '0')
+						// bitlen++
+						DE[I] = PadRight(DE[I], bitLen+1, '0')
 					}
 
-					li = fmt.Sprint(len(DE[I]))
+					li = fmt.Sprint(bitLen)
 					paddedli = fmt.Sprintf("%02s", li)
 					newISO.WriteString(paddedli + DE[I])
 				case 1:

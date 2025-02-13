@@ -14,15 +14,15 @@ func NewRepo(db *gorm.DB) Repo {
 	return Repo{Db: db}
 }
 
-func (r Repo) CreateLogTrx(ctx context.Context, mid, tid, batch string) error {
-	result := r.Db.WithContext(ctx).Exec(`INSERT INTO transaction_logs SELECT *, NOW() FROM transactions 
+func (r Repo) CreateLogTrx(ctx context.Context, tx *gorm.DB, mid, tid, batch string) error {
+	result := tx.WithContext(ctx).Exec(`INSERT INTO transaction_logs SELECT *, NOW() FROM transactions 
 				WHERE mid = ? AND tid = ? AND batch = ?`, mid, tid, batch)
 
 	return result.Error
 }
 
-func (r Repo) ClearTrx(ctx context.Context, mid, tid, batch string) error {
-	result := r.Db.WithContext(ctx).Exec(`DELETE FROM transactions WHERE mid = ? AND tid = ? AND batch = ?`, mid, tid, batch)
+func (r Repo) ClearTrx(ctx context.Context, tx *gorm.DB, mid, tid, batch string) error {
+	result := tx.WithContext(ctx).Exec(`DELETE FROM transactions WHERE mid = ? AND tid = ? AND batch = ?`, mid, tid, batch)
 
 	return result.Error
 }

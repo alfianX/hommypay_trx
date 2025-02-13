@@ -251,7 +251,7 @@ func (s *service) Reversal(c *gin.Context) {
 		return
 	}
 
-	trxID, issuerID, err := s.transactionService.CheckDataTrx(c, transactions.CheckDataTrxParams{
+	trxID, issuerID, bankCode, err := s.transactionService.CheckDataTrx(c, transactions.CheckDataTrxParams{
 		Procode: procode,
 		TID: tid,
 		MID: mid,
@@ -328,6 +328,7 @@ func (s *service) Reversal(c *gin.Context) {
 				Trace: req.PaymentInformation.Trace,
 				Batch: req.PaymentInformation.Batch,
 				TransMode: req.PosTerminal.TransMode,
+				BankCode: bankCode,
 				IsoRequest: req.ISO8583,
 				IssuerID: issuerID,
 				Longitude: long,
@@ -397,7 +398,7 @@ func (s *service) Reversal(c *gin.Context) {
 
 			if err != nil {
 				if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
-					errRvrsl := s.AutoReversal(c, req, trxID, issuerID, "")
+					errRvrsl := s.AutoReversal(c, trxID, req.ISO8583, "")
 					if errRvrsl != nil {
 						s.transactionService.UpdateTrx(c, id, "E1")
 						h.ErrorLog("Save data reversal: " + errRvrsl.Error())
@@ -433,7 +434,7 @@ func (s *service) Reversal(c *gin.Context) {
 					return
 				}
 			}else{
-				errRvrsl := s.AutoReversal(c, req, trxID, issuerID, "")
+				errRvrsl := s.AutoReversal(c, trxID, req.ISO8583, "")
 				if errRvrsl != nil {
 					s.transactionService.UpdateTrx(c, id, "E1")
 					h.ErrorLog("Save data reversal: " + errRvrsl.Error())
@@ -529,20 +530,26 @@ func (s *service) Reversal(c *gin.Context) {
 	}
 }
 
-func (s service) AutoReversal(c *gin.Context, req types.ReversalRequest, trxId string, issuerID int64, rcOrg string) error {
-	err := s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
+func (s service) AutoReversal(c *gin.Context, trxId string, isoReq string, rcOrg string) error {
+	data, err := s.transactionService.GetTrxByTrxID(c, trxId)
+	if err != nil {
+		return err
+	}
+
+	err = s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
 		TransactionID: trxId,
 		TransactionType: "41",
-		Procode: req.PaymentInformation.Procode,
-		Mid: req.PaymentInformation.MID,
-		Tid: req.PaymentInformation.TID,
-		Amount: req.PaymentInformation.Amount,
-		TransactionDate: req.PaymentInformation.TransactionDate,
-		Stan: req.PaymentInformation.STAN,
-		Trace: req.PaymentInformation.Trace,
-		Batch: req.PaymentInformation.Batch,
-		IsoRequest: req.ISO8583,
-		IssuerID: issuerID,
+		Procode: data.Procode,
+		Mid: data.Mid,
+		Tid: data.Tid,
+		Amount: data.Amount,
+		TransactionDate: data.TransactionDate,
+		Stan: data.Stan,
+		StanIssuer: data.StanIssuer,
+		Trace: data.Trace,
+		Batch: data.Batch,
+		IsoRequest: isoReq,
+		IssuerID: data.IssuerID,
 	})
 
 	return err

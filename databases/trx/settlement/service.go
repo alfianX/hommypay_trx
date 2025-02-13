@@ -3,6 +3,8 @@ package settlement
 import (
 	"context"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -37,7 +39,7 @@ type CreateSettleParams struct {
 	ProcessSettle	 string
 }
 
-func (s Service) CreateSettle(ctx context.Context, settleType string, params CreateSettleParams) (int64, error) {
+func (s Service) CreateSettle(ctx context.Context, tx *gorm.DB, settleType string, params CreateSettleParams) (int64, error) {
 	var subBatchNo string
 	if settleType == "NORMAL" {
 		subBatchNo = "00"
@@ -65,7 +67,7 @@ func (s Service) CreateSettle(ctx context.Context, settleType string, params Cre
 		ProcessSettle: 	  params.ProcessSettle,
 	}
 
-	id, err := s.repo.CreateSettle(ctx, &entity)
+	id, err := s.repo.CreateSettle(ctx, tx, &entity)
 	if err != nil {
 		return 0, err
 	}
@@ -73,8 +75,8 @@ func (s Service) CreateSettle(ctx context.Context, settleType string, params Cre
 	return id, err
 }
 
-func (s Service) UpdateFirstSettleDate(ctx context.Context, id int64, trxDate time.Time) error {
-	err := s.repo.UpdateFirstSettleDate(ctx, id, trxDate)
+func (s Service) UpdateFirstSettleDate(ctx context.Context, tx *gorm.DB, id int64, trxDate time.Time) error {
+	err := s.repo.UpdateFirstSettleDate(ctx, tx, id, trxDate)
 	if err != nil {
 		return err
 	}

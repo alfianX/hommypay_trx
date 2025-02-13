@@ -1,6 +1,10 @@
 package transactionlogs
 
-import "context"
+import (
+	"context"
+
+	"gorm.io/gorm"
+)
 
 type Service struct {
 	repo Repo
@@ -12,22 +16,17 @@ func NewService(r Repo) Service {
 	}
 }
 
-func (s Service) CreateLogTrx(ctx context.Context, mid, tid, batch string) error {
-	tx := s.repo.Db.Begin()
-	
-	defer tx.Rollback()
+func (s Service) CreateLogTrx(ctx context.Context, tx *gorm.DB, mid, tid, batch string) error {
 
-	err := s.repo.CreateLogTrx(ctx, mid, tid, batch)
+	err := s.repo.CreateLogTrx(ctx, tx, mid, tid, batch)
 	if err != nil {
 		return err
 	}
 
-	err = s.repo.ClearTrx(ctx, mid, tid, batch)
+	err = s.repo.ClearTrx(ctx, tx, mid, tid, batch)
 	if err != nil {
 		return err
 	}
-
-	tx.Commit()
 
 	return err
 }

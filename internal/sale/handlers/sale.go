@@ -148,6 +148,7 @@ func (s service) Sale(c *gin.Context) {
 	var pinBlockEnc string
 	var iso8583Enc string
 	var appName string
+	var bankCode string
 
 	if c.GetHeader("X-LATITUDE") != "" {
 		lat = c.GetHeader("X-LATITUDE")
@@ -167,6 +168,20 @@ func (s service) Sale(c *gin.Context) {
 	timeString := currentTime.Format(timeFormat)
 	dateFormat := "20060102"
 	dateString := currentTime.Format(dateFormat)
+
+	maxAmount, err := s.acqConfigService.GetMaxAmount(c)
+	if err != nil {
+		h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "sale")
+		h.ErrorLog("Get max amount: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	if amount > maxAmount {
+		h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "sale")
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "I9", Message: "Amount exceeds the transaction limit"}, http.StatusBadRequest)
+		return
+	}
 
 	ip, port, err := s.hsmConfigService.GetHSMIpPort(c)
 	if err != nil {
@@ -381,7 +396,7 @@ func (s service) Sale(c *gin.Context) {
 		cardType = "CREDIT"
 	}
 
-	issuerID, issuerName, issuerConnType, issuerService, err = s.binRangeService.GetUrlByPAN(c, pan, cardType)
+	issuerID, issuerName, issuerConnType, issuerService, bankCode, err = s.binRangeService.GetUrlByPAN(c, pan, cardType)
 	if err != nil {
 		h.ErrorLog("Get url microservice: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -433,6 +448,7 @@ func (s service) Sale(c *gin.Context) {
 		Trace: req.PaymentInformation.Trace,
 		Batch: req.PaymentInformation.Batch,
 		TransMode: req.PosTerminal.TransMode,
+		BankCode: bankCode,
 		IsoRequest: req.ISO8583,
 		IssuerID: issuerID,
 		Longitude: long,
@@ -502,7 +518,7 @@ func (s service) Sale(c *gin.Context) {
  
 	if err != nil {
 		if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
-			errRvrsl := s.AutoReversal(c, req, transactionID, issuerID, "")
+			errRvrsl := s.AutoReversal(c, transactionID, "")
 			if errRvrsl != nil {
 				s.transactionService.UpdateTrx(c, id, "E1")
 				h.ErrorLog("Save data reversal: " + errRvrsl.Error())
@@ -563,7 +579,7 @@ func (s service) Sale(c *gin.Context) {
 		h.IssuerLog(logMessage, issuerName)
 	}
 	
-	h.HistoryRespLog(dataRequestByte, dateString, timeString, "sale")
+	h.HistoryRespLog(dataResponseByte, dateString, timeString, "sale")
 	
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
@@ -629,20 +645,26 @@ func (s service) Sale(c *gin.Context) {
 	}
 }
 
-func (s service) AutoReversal(c *gin.Context, req types.SaleRequest, trxId string, issuerID int64, rcOrg string) error {
-	err := s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
+func (s service) AutoReversal(c *gin.Context, trxId string, rcOrg string) error {
+	data, err := s.transactionService.GetTrxByTrxID(c, trxId)
+	if err != nil {
+		return err
+	}
+
+	err = s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
 		TransactionID: trxId,
-		TransactionType: "01",
-		Procode: req.PaymentInformation.Procode,
-		Mid: req.PaymentInformation.MID,
-		Tid: req.PaymentInformation.TID,
-		Amount: req.PaymentInformation.Amount,
-		TransactionDate: req.PaymentInformation.TransactionDate,
-		Stan: req.PaymentInformation.STAN,
-		Trace: req.PaymentInformation.Trace,
-		Batch: req.PaymentInformation.Batch,
-		IsoRequest: req.ISO8583,
-		IssuerID: issuerID,
+		TransactionType: data.TransactionType,
+		Procode: data.Procode,
+		Mid: data.Mid,
+		Tid: data.Tid,
+		Amount: data.Amount,
+		TransactionDate: data.TransactionDate,
+		Stan: data.Stan,
+		StanIssuer: data.StanIssuer,
+		Trace: data.Trace,
+		Batch: data.Batch,
+		IsoRequest: data.IsoRequest,
+		IssuerID: data.IssuerID,
 	})
 
 	return err

@@ -12,13 +12,13 @@ func NewService(r Repo) Service {
 	}
 }
 
-func (s Service) GetUrlByPAN(ctx context.Context, pan, cardType string) (int64, string, int64, string, error) {
-	issuerID, issuerName, issuerConnType, issuerService, err := s.repo.GetUrlByPAN(ctx, pan, cardType)
+func (s Service) GetUrlByPAN(ctx context.Context, pan, cardType string) (int64, string, int64, string, string, error) {
+	issuerID, issuerName, issuerConnType, issuerService, bankCode, err := s.repo.GetUrlByPAN(ctx, pan, cardType)
 	if err != nil {
-		return 0, "", 0, "", err
+		return 0, "", 0, "", "", err
 	}
 
-	return issuerID, issuerName, issuerConnType, issuerService, nil
+	return issuerID, issuerName, issuerConnType, issuerService, bankCode, nil
 }
 
 func (s Service) GetCardTypeByPAN(ctx context.Context, pan string) (string, error) {

@@ -26,6 +26,7 @@ type Transactions struct {
 	Trace             string        `json:"trace"`
 	Batch			  string		`json:"batch"`
 	TransMode         string        `json:"trans_mode"`
+	BankCode		  string		`json:"bank_code"`
 	IsoRequest        string        `json:"iso_request"`
 	IsoRequestIssuer  string        `json:"iso_request_issuer"`
 	ResponseCode      string        `json:"response_code"`

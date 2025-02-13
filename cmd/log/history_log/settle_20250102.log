@@ -1,0 +1,12 @@
+
+ respondStatus: 409, respondBody: {"status":"SERVER_FAILED","responseCode":"E1","message":"Service Acq Malfunction"}
+
+ respondStatus: 409, respondBody: {"status":"SERVER_FAILED","responseCode":"E1","message":"Service Acq Malfunction"}
+
+ respondStatus: 409, respondBody: {"status":"SERVER_FAILED","responseCode":"E1","message":"Service Acq Malfunction"}
+
+ respondStatus: 400, respondBody: {"status":"INVALID_SETTLE","responseCode":"95","message":"Settle not match"}
+
+ respondStatus: 400, respondBody: {"status":"INVALID_SETTLE","responseCode":"95","message":"Settle not match"}
+
+ respondStatus: 400, respondBody: {"status":"INVALID_SETTLE","responseCode":"95","message":"Settle not match"}

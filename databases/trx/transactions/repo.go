@@ -57,6 +57,7 @@ func (r Repo) CreateTrx(ctx context.Context, entity *Transactions) (int64, error
 		"trace",
 		"batch",
 		"trans_mode",
+		"bank_code",
 		"iso_request",
 		"issuer_id",
 		"status",
@@ -214,16 +215,16 @@ func (r Repo) GetDataTrx(ctx context.Context, mid, tid, batch string) ([]Transac
 	return allData, result.Error
 }
 
-func (r Repo) UpdateSettleFlag(ctx context.Context, mid, tid, batch string) error {
-	result := r.Db.WithContext(ctx).Model(&Transactions{}).
+func (r Repo) UpdateSettleFlag(ctx context.Context, tx *gorm.DB, mid, tid, batch string) error {
+	result := tx.WithContext(ctx).Model(&Transactions{}).
 				Where(`mid = ? AND tid = ? AND batch = ? AND settle_flag = ?`, mid, tid, batch, 0).
 				Updates(&Transactions{SettleFlag: 1, SettledAt: time.Now()})
 	
 	return result.Error
 }
 
-func (r Repo) CheckDataTrx(ctx context.Context, entity *Transactions) (string, int64, error) {
-	result := r.Db.WithContext(ctx).Select("transaction_id", "issuer_id").
+func (r Repo) CheckDataTrx(ctx context.Context, entity *Transactions) (string, int64, string, error) {
+	result := r.Db.WithContext(ctx).Select("transaction_id", "issuer_id", "bank_code").
 				Where(`procode = ? AND mid = ? AND tid = ? AND amount = ?
 				AND transaction_date = ? AND stan = ? AND trace = ? AND batch = ? AND status = ? 
 				AND response_code = ? AND reversal_flag != ?`,
@@ -231,7 +232,7 @@ func (r Repo) CheckDataTrx(ctx context.Context, entity *Transactions) (string, i
 				entity.TransactionDate, entity.Stan, entity.Trace, entity.Batch, 2, "00", 1).
 				Find(&entity)
 	
-	return entity.TransactionID, entity.IssuerID, result.Error
+	return entity.TransactionID, entity.IssuerID, entity.BankCode, result.Error
 }
 
 func (r Repo) CheckDataTrxV2(ctx context.Context, entity *Transactions) (string, int64, error) {
@@ -327,4 +328,17 @@ func (r Repo) CheckDataSettle(ctx context.Context, entity *Transactions) (int64,
 						entity.Mid, entity.Tid, entity.Batch).Count(&count)
 
 	return count, result.Error
+}
+
+func (r Repo) GetTrxByTrxID(ctx context.Context, trxID string) (Transactions, error) {
+	var data Transactions
+
+	result := r.Db.WithContext(ctx).
+				Where(`transaction_id = ?`, trxID).Find(&data)
+	
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return data, result.Error
+	}
+
+	return data, nil
 }

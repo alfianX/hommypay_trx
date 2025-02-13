@@ -14,8 +14,8 @@ func NewRepo(db *gorm.DB) Repo {
 	return Repo{Db: db}
 }
 
-func (r Repo) CreateSettleDetail(ctx context.Context, entity *SettlementDetails) error {
-	result := r.Db.WithContext(ctx).Select(
+func (r Repo) CreateSettleDetail(ctx context.Context, tx *gorm.DB, entity *SettlementDetails) error {
+	result := tx.WithContext(ctx).Select(
 		"settlement_id",
 		"transaction_id",
 		"transaction_type",
@@ -35,6 +35,7 @@ func (r Repo) CreateSettleDetail(ctx context.Context, entity *SettlementDetails)
 		"trace",
 		"batch",
 		"trans_mode",
+		"bank_code",
 		"iso_request",
 		"iso_request_issuer",
 		"response_code",

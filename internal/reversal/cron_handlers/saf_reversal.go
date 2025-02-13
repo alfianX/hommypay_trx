@@ -200,6 +200,8 @@ func (cs *CronService) SafReversal() {
 						h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 						continue
 					}
+
+					continue
 				}
 
 				err = cs.reversalService.UpdateDataReversal(context.Background(), reversals.UpdateDataReversalParams{

@@ -25,11 +25,35 @@ func (r Repo) SaveDataReversal(ctx context.Context, entity *Reversals) error {
 		"amount",
 		"transaction_date",
 		"stan",
+		"stan_issuer",
 		"trace",
 		"batch",
 		"iso_request",
 		"issuer_id",
 		"flag",
+		"created_at",
+	).Create(&entity)
+
+	return result.Error
+}
+
+func (r Repo) SaveDataReversalSettle(ctx context.Context, entity *Reversals) error {
+	result := r.Db.WithContext(ctx).Select(
+		"transaction_id",
+		"transaction_type",
+		"procode",
+		"mid",
+		"tid",
+		"amount",
+		"transaction_date",
+		"stan",
+		"stan_issuer",
+		"trace",
+		"batch",
+		"iso_request",
+		"issuer_id",
+		"flag",
+		"response_code_origin",
 		"created_at",
 	).Create(&entity)
 
@@ -66,7 +90,7 @@ func (r Repo) GetDataAutoReversal(ctx context.Context) ([]Reversals, error) {
 					"iso_request",
 					"issuer_id",	
 					"repeat_count",
-				).Where(`response_code_origin IS NOT NULL AND flag = ?`, 70).Find(&allData)
+				).Where(`transaction_type != ? AND response_code_origin IS NOT NULL AND flag = ?`, "41", 70).Find(&allData)
 
 	return allData, result.Error
 }

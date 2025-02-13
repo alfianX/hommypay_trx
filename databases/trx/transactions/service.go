@@ -3,6 +3,8 @@ package transactions
 import (
 	"context"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -31,6 +33,7 @@ type CreateTrxParams struct {
 	Trace             string
 	Batch			  string
 	TransMode		  string
+	BankCode		  string
 	IsoRequest	      string
 	IssuerID          int64
 	Longitude         string
@@ -136,6 +139,7 @@ func (s Service) CreateSaleTrx(ctx context.Context, params CreateTrxParams) (int
 		Trace: params.Trace,
 		Batch: params.Batch,
 		TransMode: params.TransMode,
+		BankCode: params.BankCode,
 		IsoRequest: params.IsoRequest,
 		IssuerID: params.IssuerID,
 		Status: 1,
@@ -170,6 +174,7 @@ func (s Service) CreateReversalTrx(ctx context.Context, params CreateTrxParams) 
 		Trace: params.Trace,
 		Batch: params.Batch,
 		TransMode: params.TransMode,
+		BankCode: params.BankCode,
 		IsoRequest: params.IsoRequest,
 		IssuerID: params.IssuerID,
 		Status: 1,
@@ -204,6 +209,7 @@ func (s Service) CreateVoidTrx(ctx context.Context, params CreateTrxParams) (int
 		Trace: params.Trace,
 		Batch: params.Batch,
 		TransMode: params.TransMode,
+		BankCode: params.BankCode,
 		IsoRequest: params.IsoRequest,
 		IssuerID: params.IssuerID,
 		Status: 1,
@@ -380,9 +386,9 @@ func (s Service) UpdateReversal(ctx context.Context, id int64) error {
 	return err
 }
 
-func (s Service) UpdateSettleFlag(ctx context.Context, mid, tid, batch string) error {
+func (s Service) UpdateSettleFlag(ctx context.Context, tx *gorm.DB, mid, tid, batch string) error {
 
-	err := s.repo.UpdateSettleFlag(ctx, mid, tid, batch)
+	err := s.repo.UpdateSettleFlag(ctx, tx, mid, tid, batch)
 	if err != nil {
 		return err
 	}
@@ -418,7 +424,7 @@ func (s Service) UpdateTOReversalFlag(ctx context.Context, trxID string) error {
 	return nil
 }
 
-func (s Service) CheckDataTrx(ctx context.Context, params CheckDataTrxParams) (string, int64, error) {
+func (s Service) CheckDataTrx(ctx context.Context, params CheckDataTrxParams) (string, int64, string, error) {
 	entity := Transactions{
 		Procode: 		 params.Procode,
 		Tid:             params.TID,
@@ -430,12 +436,12 @@ func (s Service) CheckDataTrx(ctx context.Context, params CheckDataTrxParams) (s
 		Batch: 			 params.Batch,
 	}
 
-	trxID, issuerID, err := s.repo.CheckDataTrx(ctx, &entity)
+	trxID, issuerID, bankCode, err := s.repo.CheckDataTrx(ctx, &entity)
 	if err != nil {
-		return "", 0, err
+		return "", 0, "", err
 	}
 
-	return trxID, issuerID, err
+	return trxID, issuerID, bankCode, err
 }
 
 func (s Service) CheckDataTrxV2(ctx context.Context, params CheckDataTrxParams) (string, int64, error) {
@@ -532,4 +538,13 @@ func (s Service) CheckDataSettle(ctx context.Context, params CheckDataSettlePara
 	}
 
 	return count, nil
+}
+
+func (s Service) GetTrxByTrxID(ctx context.Context, trxID string) (Transactions, error) {
+	data, err := s.repo.GetTrxByTrxID(ctx, trxID)
+	if err != nil {
+		return data, err
+	}
+
+	return data, nil
 }

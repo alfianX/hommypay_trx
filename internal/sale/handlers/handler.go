@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/alfianX/hommypay_trx/configs"
 	"github.com/alfianX/hommypay_trx/databases/merchant/terminals"
+	acqconfig "github.com/alfianX/hommypay_trx/databases/param/acq_config"
 	"github.com/alfianX/hommypay_trx/databases/param/aid"
 	binrange "github.com/alfianX/hommypay_trx/databases/param/bin_range"
 	fdsconfig "github.com/alfianX/hommypay_trx/databases/param/fds_config"
@@ -29,6 +30,7 @@ type service struct {
 	fdsConfigService		fdsconfig.Service
 	suspectListService		suspectlist.Service
 	aidService				aid.Service
+	acqConfigService		acqconfig.Service
 }
 
 func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
@@ -45,5 +47,6 @@ func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *g
 		fdsConfigService: fdsconfig.NewService(fdsconfig.NewRepo(dbParam)),
 		suspectListService: suspectlist.NewService(suspectlist.NewRepo(dbParam)),
 		aidService: aid.NewService(aid.NewRepo(dbParam)),
+		acqConfigService: acqconfig.NewService(acqconfig.NewRepo(dbParam)),
 	}
 }

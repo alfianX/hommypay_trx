@@ -38,8 +38,8 @@ func (r Repo) GetBatch(ctx context.Context, tid string, mid string) (string, err
 	return terminal.Batch, result.Error
 }
 
-func (r Repo) UpdateBatch(ctx context.Context, tid, mid, batch string) error {
-	result := r.Db.WithContext(ctx).Model(&Terminals{}).Where(`
+func (r Repo) UpdateBatch(ctx context.Context, tx *gorm.DB, tid, mid, batch string) error {
+	result := tx.WithContext(ctx).Model(&Terminals{}).Where(`
 				id = ? AND merchant_id = ?`, tid, mid).Updates(&Terminals{
 					Batch: batch,
 				})

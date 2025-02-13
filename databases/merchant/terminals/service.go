@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -34,7 +36,7 @@ func (s Service) GetEmailMerchant(ctx context.Context, tid string, mid string) (
 	return email, nil
 }
 
-func (s Service) UpdateBatch(ctx context.Context, tid, mid string) error {
+func (s Service) UpdateBatch(ctx context.Context, tx *gorm.DB, tid, mid string) error {
 	var batch string
 	
 	batch, err := s.repo.GetBatch(ctx, tid, mid)
@@ -50,7 +52,7 @@ func (s Service) UpdateBatch(ctx context.Context, tid, mid string) error {
 	batchInt = batchInt + 1
 	batchStr := fmt.Sprintf("%06d", batchInt)
 
-	err = s.repo.UpdateBatch(ctx, tid, mid, batchStr)
+	err = s.repo.UpdateBatch(ctx, tx, tid, mid, batchStr)
 
 	return err
 }

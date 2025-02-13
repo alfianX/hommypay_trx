@@ -3,6 +3,8 @@ package settlementdetails
 import (
 	"context"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -35,6 +37,7 @@ type CreateSettleDetailParams struct {
 	Trace               	string
 	Batch					string
 	TransMode				string
+	BankCode				string
 	ISO8583Request      	string
 	ISO8583RequestIssuer	string
 	ResponseCode        	string
@@ -53,7 +56,7 @@ type CreateSettleDetailParams struct {
 	CutOff					string
 }
 
-func (s Service) CreateSettleDetail(ctx context.Context, settleType string, params CreateSettleDetailParams) error {
+func (s Service) CreateSettleDetail(ctx context.Context, tx *gorm.DB, settleType string, params CreateSettleDetailParams) error {
 	var status int64
 	if settleType != "NORMAL" {
 		if params.BatchUFlag == 2 {
@@ -84,6 +87,7 @@ func (s Service) CreateSettleDetail(ctx context.Context, settleType string, para
 		Trace:               params.Trace,
 		Batch: 				 params.Batch,
 		TransMode: 			 params.TransMode,
+		BankCode: 			 params.BankCode,	
 		IsoRequest:      	 params.ISO8583Request,
 		IsoRequestIssuer:  	 params.ISO8583RequestIssuer,
 		ResponseCode:        params.ResponseCode,
@@ -103,7 +107,7 @@ func (s Service) CreateSettleDetail(ctx context.Context, settleType string, para
 		CreatedAt: 			 time.Now(),		
 	}
 
-	err := s.repo.CreateSettleDetail(ctx, &entity)
+	err := s.repo.CreateSettleDetail(ctx, tx, &entity)
 	
 	return err
 }

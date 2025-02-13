@@ -12,6 +12,7 @@ type Reversals struct {
 	Amount				int64		`json:"amount"`
 	TransactionDate 	time.Time	`gorm:"autoCreateTime:false" json:"transaction_date"`
 	Stan				string		`json:"stan"`
+	StanIssuer			string		`json:"stan_issuer"`
 	Trace				string		`json:"trace"`
 	Batch				string		`json:"batch"`
 	IsoRequest      	string 		`json:"iso_request"`

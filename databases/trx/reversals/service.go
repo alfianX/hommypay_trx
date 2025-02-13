@@ -22,8 +22,9 @@ type SaveDataReversalParams struct {
 	Mid             string
 	Tid             string
 	Amount          int64
-	TransactionDate string
+	TransactionDate time.Time
 	Stan            string
+	StanIssuer		string
 	Trace           string
 	Batch           string
 	IsoRequest      string
@@ -49,12 +50,6 @@ type CheckDataReversalParams struct {
 }
 
 func (s Service) SaveDataReversal(ctx context.Context, params SaveDataReversalParams) error {
-	loc, _ := time.LoadLocation("Asia/Jakarta")
-	trxDate, err := time.ParseInLocation("2006-01-02 15:04:05", params.TransactionDate, loc)
-	if err != nil {
-		return err
-	}
-
 	entity := Reversals{
 		TransactionID: params.TransactionID,
 		TransactionType: params.TransactionType,
@@ -62,8 +57,9 @@ func (s Service) SaveDataReversal(ctx context.Context, params SaveDataReversalPa
 		Mid: params.Mid,
 		Tid: params.Tid,
 		Amount: params.Amount,
-		TransactionDate: trxDate,
+		TransactionDate: params.TransactionDate,
 		Stan: params.Stan,
+		StanIssuer: params.StanIssuer,
 		Trace: params.Trace,
 		Batch: params.Batch,
 		IsoRequest: params.IsoRequest,
@@ -72,7 +68,32 @@ func (s Service) SaveDataReversal(ctx context.Context, params SaveDataReversalPa
 		CreatedAt: time.Now(),
 	}
 
-	err = s.repo.SaveDataReversal(ctx, &entity)
+	err := s.repo.SaveDataReversal(ctx, &entity)
+	
+	return err
+}
+
+func (s Service) SaveDataReversalSettle(ctx context.Context, params SaveDataReversalParams) error {
+	entity := Reversals{
+		TransactionID: params.TransactionID,
+		TransactionType: params.TransactionType,
+		Procode: params.Procode,
+		Mid: params.Mid,
+		Tid: params.Tid,
+		Amount: params.Amount,
+		TransactionDate: params.TransactionDate,
+		Stan: params.Stan,
+		StanIssuer: params.StanIssuer,
+		Trace: params.Trace,
+		Batch: params.Batch,
+		IsoRequest: params.IsoRequest,
+		IssuerID: params.IssuerID,
+		ResponseCodeOrigin: params.ResponseCodeOrg,
+		Flag: 70,
+		CreatedAt: time.Now(),
+	}
+
+	err := s.repo.SaveDataReversalSettle(ctx, &entity)
 	
 	return err
 }
