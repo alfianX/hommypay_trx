@@ -7,6 +7,8 @@ import (
 	hsmconfig "github.com/alfianX/hommypay_trx/databases/param/hsm_config"
 	"github.com/alfianX/hommypay_trx/databases/param/issuer"
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
+	responsecodereversal "github.com/alfianX/hommypay_trx/databases/param/response_code_reversal"
+	responsecodetrx "github.com/alfianX/hommypay_trx/databases/param/response_code_trx"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	"github.com/gin-gonic/gin"
@@ -15,29 +17,33 @@ import (
 )
 
 type service struct {
-	logger              	*logrus.Logger
-	router              	*gin.Engine
-	config					configs.Config
-	binRangeService     	binrange.Service
-	hsmConfigService    	hsmconfig.Service
-	keyConfigService    	keyconfig.Service
-	reversalService			reversals.Service
-	terminalService			terminals.Service
-	transactionService		transactions.Service
-	issuerService			issuer.Service
+	logger             *logrus.Logger
+	router             *gin.Engine
+	config             configs.Config
+	binRangeService    binrange.Service
+	hsmConfigService   hsmconfig.Service
+	keyConfigService   keyconfig.Service
+	reversalService    reversals.Service
+	terminalService    terminals.Service
+	transactionService transactions.Service
+	issuerService      issuer.Service
+	rcTrxService       responsecodetrx.Service
+	rcReversalService  responsecodereversal.Service
 }
 
 func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
 	return service{
-		logger:              lg,
-		router:              rtr,
-		config: 			 cnf,
-		binRangeService:     binrange.NewService(binrange.NewRepo(dbParam)),
-		hsmConfigService:    hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
-		keyConfigService:    keyconfig.NewService(keyconfig.NewRepo(dbParam)),
-		reversalService: 	 reversals.NewService(reversals.NewRepo(dbTrx)),
-		terminalService: 	 terminals.NewService(terminals.NewRepo(dbMerchant)),
+		logger:             lg,
+		router:             rtr,
+		config:             cnf,
+		binRangeService:    binrange.NewService(binrange.NewRepo(dbParam)),
+		hsmConfigService:   hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
+		keyConfigService:   keyconfig.NewService(keyconfig.NewRepo(dbParam)),
+		reversalService:    reversals.NewService(reversals.NewRepo(dbTrx)),
+		terminalService:    terminals.NewService(terminals.NewRepo(dbMerchant)),
 		transactionService: transactions.NewService(transactions.NewRepo(dbTrx)),
-		issuerService: issuer.NewService(issuer.NewRepo(dbParam)),
+		issuerService:      issuer.NewService(issuer.NewRepo(dbParam)),
+		rcTrxService:       responsecodetrx.NewService(responsecodetrx.NewRepo(dbParam)),
+		rcReversalService:  responsecodereversal.NewService(responsecodereversal.NewRepo(dbParam)),
 	}
 }

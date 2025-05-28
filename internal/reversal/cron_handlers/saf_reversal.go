@@ -85,7 +85,7 @@ func (cs *CronService) SafReversal() {
 
 								repeatCount := row.RepeatCount + 1
 
-								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.TransactionID, repeatCount)
 								if err != nil {
 									h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 									continue
@@ -148,7 +148,7 @@ func (cs *CronService) SafReversal() {
 
 								repeatCount := row.RepeatCount + 1
 
-								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+								err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.TransactionID, repeatCount)
 								if err != nil {
 									h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 									continue
@@ -184,9 +184,9 @@ func (cs *CronService) SafReversal() {
 					}
 				} else if responseCode == "1B" {
 					err = cs.reversalService.UpdateDataReversal(context.Background(), reversals.UpdateDataReversalParams{
-						ID:           row.ID,
-						ResponseCode: responseCode,
-						IsoResponse:  isoResEnc,
+						TransactionID: row.TransactionID,
+						ResponseCode:  responseCode,
+						IsoResponse:   isoResEnc,
 					})
 					if err != nil {
 						h.ErrorLog("Cron AR -> Update reversal: " + err.Error())
@@ -195,7 +195,7 @@ func (cs *CronService) SafReversal() {
 
 					repeatCount := row.RepeatCount
 
-					err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+					err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.TransactionID, repeatCount)
 					if err != nil {
 						h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 						continue
@@ -205,22 +205,22 @@ func (cs *CronService) SafReversal() {
 				}
 
 				err = cs.reversalService.UpdateDataReversal(context.Background(), reversals.UpdateDataReversalParams{
-					ID:           row.ID,
-					ResponseCode: responseCode,
-					IsoResponse:  isoResEnc,
+					TransactionID: row.TransactionID,
+					ResponseCode:  responseCode,
+					IsoResponse:   isoResEnc,
 				})
 				if err != nil {
 					h.ErrorLog("Cron AR -> Update reversal: " + err.Error())
 					continue
 				}
 
-				err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.ID)
+				err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.TransactionID)
 				if err != nil {
 					h.ErrorLog("Cron AR -> Save reversal log: " + err.Error())
 					continue
 				}
 
-				err = cs.reversalService.DeleteReversal(context.Background(), row.ID)
+				err = cs.reversalService.DeleteReversal(context.Background(), row.TransactionID)
 				if err != nil {
 					h.ErrorLog("Cron AR -> Delete reversal data: " + err.Error())
 					continue

@@ -18,12 +18,13 @@ func NewService(r Repo) Service {
 }
 
 type CreateSettleParams struct {
+	SettlementID     string
 	MID              string
 	TID              string
 	STAN             string
 	Trace            string
 	Batch            string
-	RefNo			 string
+	RefNo            string
 	SettleDate       string
 	TotalTransaction int64
 	TotalAmount      int64
@@ -35,11 +36,11 @@ type CreateSettleParams struct {
 	PosSaleAmount    int64
 	PosVoidCount     int64
 	PosVoidAmount    int64
-	Signature		 string
-	ProcessSettle	 string
+	Signature        string
+	ProcessSettle    string
 }
 
-func (s Service) CreateSettle(ctx context.Context, tx *gorm.DB, settleType string, params CreateSettleParams) (int64, error) {
+func (s Service) CreateSettle(ctx context.Context, tx *gorm.DB, settleType string, params CreateSettleParams) error {
 	var subBatchNo string
 	if settleType == "NORMAL" {
 		subBatchNo = "00"
@@ -48,12 +49,13 @@ func (s Service) CreateSettle(ctx context.Context, tx *gorm.DB, settleType strin
 	}
 
 	entity := Settlement{
+		SettlementID:     params.SettlementID,
 		Mid:              params.MID,
 		Tid:              params.TID,
 		Stan:             params.STAN,
 		Trace:            params.Trace,
 		Batch:            params.Batch,
-		RefNo: 			  params.RefNo,
+		RefNo:            params.RefNo,
 		SubBatchNo:       subBatchNo,
 		SettleDate:       params.SettleDate,
 		TotalTransaction: params.TotalTransaction,
@@ -62,21 +64,21 @@ func (s Service) CreateSettle(ctx context.Context, tx *gorm.DB, settleType strin
 		HostSaleAmount:   params.SaleAmount,
 		PosSaleCount:     params.PosSaleCount,
 		PosSaleAmount:    params.PosSaleAmount,
-		Signature: 		  params.Signature,
-		CreatedAt: 		  time.Now(),
-		ProcessSettle: 	  params.ProcessSettle,
+		Signature:        params.Signature,
+		CreatedAt:        time.Now(),
+		ProcessSettle:    params.ProcessSettle,
 	}
 
-	id, err := s.repo.CreateSettle(ctx, tx, &entity)
+	err := s.repo.CreateSettle(ctx, tx, &entity)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return id, err
+	return err
 }
 
-func (s Service) UpdateFirstSettleDate(ctx context.Context, tx *gorm.DB, id int64, trxDate time.Time) error {
-	err := s.repo.UpdateFirstSettleDate(ctx, tx, id, trxDate)
+func (s Service) UpdateFirstSettleDate(ctx context.Context, tx *gorm.DB, settlementID string, trxDate time.Time) error {
+	err := s.repo.UpdateFirstSettleDate(ctx, tx, settlementID, trxDate)
 	if err != nil {
 		return err
 	}

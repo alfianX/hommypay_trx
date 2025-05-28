@@ -9,6 +9,8 @@ import (
 	fdsconfig "github.com/alfianX/hommypay_trx/databases/param/fds_config"
 	hsmconfig "github.com/alfianX/hommypay_trx/databases/param/hsm_config"
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
+	responsecodereversal "github.com/alfianX/hommypay_trx/databases/param/response_code_reversal"
+	responsecodetrx "github.com/alfianX/hommypay_trx/databases/param/response_code_trx"
 	suspectlist "github.com/alfianX/hommypay_trx/databases/param/suspect_list"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
@@ -18,35 +20,39 @@ import (
 )
 
 type service struct {
-	logger              	*logrus.Logger
-	router              	*gin.Engine
-	config					configs.Config
-	transactionService		transactions.Service
-	binRangeService     	binrange.Service
-	hsmConfigService    	hsmconfig.Service
-	keyConfigService    	keyconfig.Service
-	reversalService			reversals.Service
-	terminalService			terminals.Service
-	fdsConfigService		fdsconfig.Service
-	suspectListService		suspectlist.Service
-	aidService				aid.Service
-	acqConfigService		acqconfig.Service
+	logger             *logrus.Logger
+	router             *gin.Engine
+	config             configs.Config
+	transactionService transactions.Service
+	binRangeService    binrange.Service
+	hsmConfigService   hsmconfig.Service
+	keyConfigService   keyconfig.Service
+	reversalService    reversals.Service
+	terminalService    terminals.Service
+	fdsConfigService   fdsconfig.Service
+	suspectListService suspectlist.Service
+	aidService         aid.Service
+	acqConfigService   acqconfig.Service
+	rcTrxService       responsecodetrx.Service
+	rcReversalService  responsecodereversal.Service
 }
 
 func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
 	return service{
-		logger:              lg,
-		router:              rtr,
-		config: 			 cnf,
+		logger:             lg,
+		router:             rtr,
+		config:             cnf,
 		transactionService: transactions.NewService(transactions.NewRepo(dbTrx)),
-		binRangeService:     binrange.NewService(binrange.NewRepo(dbParam)),
-		hsmConfigService:    hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
-		keyConfigService:    keyconfig.NewService(keyconfig.NewRepo(dbParam)),
-		reversalService: 	 reversals.NewService(reversals.NewRepo(dbTrx)),
-		terminalService: 	 terminals.NewService(terminals.NewRepo(dbMerchant)),
-		fdsConfigService: fdsconfig.NewService(fdsconfig.NewRepo(dbParam)),
+		binRangeService:    binrange.NewService(binrange.NewRepo(dbParam)),
+		hsmConfigService:   hsmconfig.NewService(hsmconfig.NewRepo(dbParam)),
+		keyConfigService:   keyconfig.NewService(keyconfig.NewRepo(dbParam)),
+		reversalService:    reversals.NewService(reversals.NewRepo(dbTrx)),
+		terminalService:    terminals.NewService(terminals.NewRepo(dbMerchant)),
+		fdsConfigService:   fdsconfig.NewService(fdsconfig.NewRepo(dbParam)),
 		suspectListService: suspectlist.NewService(suspectlist.NewRepo(dbParam)),
-		aidService: aid.NewService(aid.NewRepo(dbParam)),
-		acqConfigService: acqconfig.NewService(acqconfig.NewRepo(dbParam)),
+		aidService:         aid.NewService(aid.NewRepo(dbParam)),
+		acqConfigService:   acqconfig.NewService(acqconfig.NewRepo(dbParam)),
+		rcTrxService:       responsecodetrx.NewService(responsecodetrx.NewRepo(dbParam)),
+		rcReversalService:  responsecodereversal.NewService(responsecodereversal.NewRepo(dbParam)),
 	}
 }

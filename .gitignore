@@ -1,0 +1,41 @@
+# Binaries
+/bin/
+/build/
+/out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Logs
+*.log
+
+# Dependency directories (vendor/)
+vendor/
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Environment files
+.env
+*.env
+
+# Git
+*.swp
+*.swo
+
+# Coverage
+coverage.out
+
+# Backup files
+*~

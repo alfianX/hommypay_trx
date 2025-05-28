@@ -4,12 +4,13 @@ import "time"
 
 type Settlement struct {
 	ID               int64     `json:"id"`
+	SettlementID     string    `json:"settlement_id"`
 	Mid              string    `json:"mid"`
 	Tid              string    `json:"tid"`
 	Stan             string    `json:"stan"`
 	Trace            string    `json:"trace"`
 	Batch            string    `json:"batch"`
-	RefNo			 string	   `json:"ref_no"`
+	RefNo            string    `json:"ref_no"`
 	CurrencyCode     string    `json:"currency_code"`
 	BankID           int64     `json:"bank_id"`
 	FirstTrxTime     time.Time `json:"first_trx_time"`
@@ -25,11 +26,11 @@ type Settlement struct {
 	PosSaleAmount    int64     `json:"pos_sale_amount"`
 	PosRefundCount   int64     `json:"pos_refund_count"`
 	PosRefundAmount  int64     `json:"pos_refund_amount"`
-	Signature		 string	   `json:"signature"`
+	Signature        string    `json:"signature"`
 	ClearingFlag     int64     `json:"clearing_flag"`
 	CreatedAt        time.Time `gorm:"autoCreateTime:false" json:"created_at"`
 	UpdatedAt        time.Time `gorm:"autoUpdateTime:false" json:"updated_at"`
-	ProcessSettle	 string	   `json:"process_settle"`
+	ProcessSettle    string    `json:"process_settle"`
 }
 
 func (Settlement) TableName() string {

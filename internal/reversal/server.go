@@ -22,7 +22,7 @@ type Server struct {
 	logger *logrus.Logger
 	router *gin.Engine
 	config configs.Config
-	cron cronhandlers.CronService
+	cron   cronhandlers.CronService
 }
 
 func NewServer() (*Server, error) {
@@ -71,7 +71,7 @@ func NewServer() (*Server, error) {
 		logger: log,
 		config: cnf,
 		router: router,
-		cron: cron,
+		cron:   cron,
 	}
 
 	return &s, nil

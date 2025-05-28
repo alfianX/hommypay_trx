@@ -97,12 +97,12 @@ func TcpSendToIssuer(c *gin.Context, cnf configs.Config, payload string, issuerS
 			isoResponse = msg
 		}
 	}
-	
+
 	extResp = map[string]interface{}{
 		"responseCode": responseCode,
-		"message": desc,
+		"message":      desc,
 		"approvalCode": approvalCode,
-		"ISO8583": strings.ToUpper(isoResponse),
+		"ISO8583":      strings.ToUpper(isoResponse),
 	}
 
 	return extResp, nil
@@ -112,11 +112,11 @@ func FdsCheck(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress str
 	type responseFds struct {
 		Result struct {
 			Response string `json:"response"`
-			Message string `json:"message"`
+			Message  string `json:"message"`
 		} `json:"result"`
 		Data string `json:"data"`
 	}
-	
+
 	var response responseFds
 	var resp *http.Response
 
@@ -137,7 +137,7 @@ func FdsCheck(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress str
 	}
 
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != 200 {
 		return "", "", "", errors.New("Response fds: " + resp.Status)
 	}
@@ -147,6 +147,5 @@ func FdsCheck(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress str
 		return "", "", "", errors.New("Decode response fds: " + err.Error())
 	}
 
-
-	return  response.Result.Response, response.Result.Message, response.Data, nil
+	return response.Result.Response, response.Result.Message, response.Data, nil
 }

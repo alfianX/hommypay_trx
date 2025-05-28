@@ -21,9 +21,9 @@ func (s service) BatchUpload(c *gin.Context) {
 	}
 
 	type response struct {
-		Status             string `json:"status"`
-		ResponseCode       string `json:"responseCode"`
-		Message			   string `json:"message"`
+		Status       string `json:"status"`
+		ResponseCode string `json:"responseCode"`
+		Message      string `json:"message"`
 	}
 
 	req := types.BatchUploadRequest{}
@@ -34,9 +34,9 @@ func (s service) BatchUpload(c *gin.Context) {
 		if errors.As(err, &ve) {
 			out := make([]h.ErrorMsg, len(ve))
 			for i, fe := range ve {
-                out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
-            }
-			
+				out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
+			}
+
 			// h.ErrorLog(err.Error())
 			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
@@ -84,15 +84,15 @@ func (s service) BatchUpload(c *gin.Context) {
 	// h.HistoryLog(logMessage, "batch_upload")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "batch_upload")
 
-	id, err := s.transactionService.CheckBatchDataTrx(c, transactions.CheckDataTrxParams{
-		Procode: procode,
-		TID: tid,
-		MID: mid,
-		Amount: amount,
+	trxID, err := s.transactionService.CheckBatchDataTrx(c, transactions.CheckDataTrxParams{
+		Procode:         procode,
+		TID:             tid,
+		MID:             mid,
+		Amount:          amount,
 		TransactionDate: trxDate,
-		STAN: stan,
-		Trace: trace,
-		Batch: batch,
+		STAN:            stan,
+		Trace:           trace,
+		Batch:           batch,
 	})
 	if err != nil {
 		h.ErrorLog("Check data trx: " + err.Error())
@@ -100,12 +100,12 @@ func (s service) BatchUpload(c *gin.Context) {
 		return
 	}
 
-	if id == 0 {
+	if trxID == "" {
 		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I1", Message: "Trx not found"}, http.StatusConflict)
 		return
 	}
 
-	err = s.transactionService.UpdateBatchFlag(c, id)
+	err = s.transactionService.UpdateBatchFlag(c, trxID)
 	if err != nil {
 		h.ErrorLog("Update flag batch upload: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
@@ -113,9 +113,9 @@ func (s service) BatchUpload(c *gin.Context) {
 	}
 
 	responseOK := response{
-		Status: "SUCCESS",
+		Status:       "SUCCESS",
 		ResponseCode: "00",
-		Message: "Approved",
+		Message:      "Approved",
 	}
 
 	dataResponseByte, err := json.Marshal(responseOK)

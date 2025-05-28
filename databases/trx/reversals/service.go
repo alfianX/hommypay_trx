@@ -24,77 +24,77 @@ type SaveDataReversalParams struct {
 	Amount          int64
 	TransactionDate time.Time
 	Stan            string
-	StanIssuer		string
+	StanIssuer      string
 	Trace           string
 	Batch           string
 	IsoRequest      string
-	IssuerID		int64
+	IssuerID        int64
 	ResponseCodeOrg string
 }
 
 type UpdateDataReversalParams struct {
-	ID				int64
-	ResponseCode	string
-	IsoResponse		string
+	TransactionID string
+	ResponseCode  string
+	IsoResponse   string
 }
 
 type CheckDataReversalParams struct {
-	Procode			string
+	Procode         string
 	TID             string
 	MID             string
 	Amount          int64
 	TransactionDate time.Time
 	STAN            string
 	Trace           string
-	Batch			string
+	Batch           string
 }
 
 func (s Service) SaveDataReversal(ctx context.Context, params SaveDataReversalParams) error {
 	entity := Reversals{
-		TransactionID: params.TransactionID,
+		TransactionID:   params.TransactionID,
 		TransactionType: params.TransactionType,
-		Procode: params.Procode,
-		Mid: params.Mid,
-		Tid: params.Tid,
-		Amount: params.Amount,
+		Procode:         params.Procode,
+		Mid:             params.Mid,
+		Tid:             params.Tid,
+		Amount:          params.Amount,
 		TransactionDate: params.TransactionDate,
-		Stan: params.Stan,
-		StanIssuer: params.StanIssuer,
-		Trace: params.Trace,
-		Batch: params.Batch,
-		IsoRequest: params.IsoRequest,
-		IssuerID: params.IssuerID,
-		Flag: 70,
-		CreatedAt: time.Now(),
+		Stan:            params.Stan,
+		StanIssuer:      params.StanIssuer,
+		Trace:           params.Trace,
+		Batch:           params.Batch,
+		IsoRequest:      params.IsoRequest,
+		IssuerID:        params.IssuerID,
+		Flag:            70,
+		CreatedAt:       time.Now(),
 	}
 
 	err := s.repo.SaveDataReversal(ctx, &entity)
-	
+
 	return err
 }
 
 func (s Service) SaveDataReversalSettle(ctx context.Context, params SaveDataReversalParams) error {
 	entity := Reversals{
-		TransactionID: params.TransactionID,
-		TransactionType: params.TransactionType,
-		Procode: params.Procode,
-		Mid: params.Mid,
-		Tid: params.Tid,
-		Amount: params.Amount,
-		TransactionDate: params.TransactionDate,
-		Stan: params.Stan,
-		StanIssuer: params.StanIssuer,
-		Trace: params.Trace,
-		Batch: params.Batch,
-		IsoRequest: params.IsoRequest,
-		IssuerID: params.IssuerID,
+		TransactionID:      params.TransactionID,
+		TransactionType:    params.TransactionType,
+		Procode:            params.Procode,
+		Mid:                params.Mid,
+		Tid:                params.Tid,
+		Amount:             params.Amount,
+		TransactionDate:    params.TransactionDate,
+		Stan:               params.Stan,
+		StanIssuer:         params.StanIssuer,
+		Trace:              params.Trace,
+		Batch:              params.Batch,
+		IsoRequest:         params.IsoRequest,
+		IssuerID:           params.IssuerID,
 		ResponseCodeOrigin: params.ResponseCodeOrg,
-		Flag: 70,
-		CreatedAt: time.Now(),
+		Flag:               70,
+		CreatedAt:          time.Now(),
 	}
 
 	err := s.repo.SaveDataReversalSettle(ctx, &entity)
-	
+
 	return err
 }
 
@@ -102,15 +102,15 @@ func (s Service) UpdateDataReversal(ctx context.Context, params UpdateDataRevers
 	var flag int64
 	if params.ResponseCode == "00" {
 		flag = 85
-	}else{
+	} else {
 		flag = 80
 	}
 
 	entity := Reversals{
-		ID: params.ID,
-		ResponseCode: params.ResponseCode,
-		IsoResponse: params.IsoResponse,
-		Flag: flag,
+		TransactionID: params.TransactionID,
+		ResponseCode:  params.ResponseCode,
+		IsoResponse:   params.IsoResponse,
+		Flag:          flag,
 	}
 
 	err := s.repo.UpdateDataReversal(ctx, &entity)
@@ -120,14 +120,14 @@ func (s Service) UpdateDataReversal(ctx context.Context, params UpdateDataRevers
 
 func (s *Service) CheckDataReversal(ctx context.Context, params CheckDataReversalParams) (int64, int64, string, error) {
 	entity := Reversals{
-		Procode: params.Procode,
-		Mid: params.MID,
-		Tid: params.TID,
-		Amount: params.Amount,
+		Procode:         params.Procode,
+		Mid:             params.MID,
+		Tid:             params.TID,
+		Amount:          params.Amount,
 		TransactionDate: params.TransactionDate,
-		Stan: params.STAN,
-		Trace: params.Trace,
-		Batch: params.Batch,
+		Stan:            params.STAN,
+		Trace:           params.Trace,
+		Batch:           params.Batch,
 	}
 	id, flag, rcOrg, err := s.repo.CheckDataReversal(ctx, &entity)
 	if err != nil {
@@ -145,8 +145,8 @@ func (s *Service) GetDataAutoReversal(ctx context.Context) ([]Reversals, error) 
 
 	for _, row := range data {
 		entity := Reversals{
-			ID: row.ID,
-			Flag: 85,
+			TransactionID: row.TransactionID,
+			Flag:          85,
 		}
 
 		err = s.repo.UpdateFlagReversal(ctx, &entity)
@@ -158,23 +158,23 @@ func (s *Service) GetDataAutoReversal(ctx context.Context) ([]Reversals, error) 
 	return data, nil
 }
 
-func (s *Service) CreateAutoReversalLog(ctx context.Context, id int64) error {
-	err := s.repo.CreateAutoReversalLog(ctx, id)
+func (s *Service) CreateAutoReversalLog(ctx context.Context, trxID string) error {
+	err := s.repo.CreateAutoReversalLog(ctx, trxID)
 
 	return err
 }
 
-func (s Service) DeleteReversal(ctx context.Context, id int64) error {
-	err := s.repo.DeleteReversal(ctx, id)
+func (s Service) DeleteReversal(ctx context.Context, trxID string) error {
+	err := s.repo.DeleteReversal(ctx, trxID)
 
 	return err
 }
 
-func (s *Service) UpdateBackFlagReversal(ctx context.Context, id, repeatCount int64) error {
+func (s *Service) UpdateBackFlagReversal(ctx context.Context, trxID string, repeatCount int64) error {
 	entity := Reversals{
-		ID: id,
-		Flag: 70,
-		RepeatCount: repeatCount,
+		TransactionID: trxID,
+		Flag:          70,
+		RepeatCount:   repeatCount,
 	}
 
 	err := s.repo.UpdateBackFlagReversal(ctx, &entity)
@@ -190,7 +190,7 @@ func (s *Service) GetDataSafReversal(ctx context.Context) ([]Reversals, error) {
 
 	for _, row := range data {
 		entity := Reversals{
-			ID: row.ID,
+			ID:   row.ID,
 			Flag: 85,
 		}
 

@@ -15,9 +15,10 @@ func NewRepo(db *gorm.DB) Repo {
 	return Repo{Db: db}
 }
 
-func (r Repo) CreateSettle(ctx context.Context, tx *gorm.DB, entity *Settlement) (int64, error) {
+func (r Repo) CreateSettle(ctx context.Context, tx *gorm.DB, entity *Settlement) error {
 	result := tx.WithContext(ctx).Select(
-		"mid", 
+		"settlement_id",
+		"mid",
 		"tid",
 		"stan",
 		"trace",
@@ -40,11 +41,12 @@ func (r Repo) CreateSettle(ctx context.Context, tx *gorm.DB, entity *Settlement)
 		"process_settle",
 	).Create(&entity)
 
-	return entity.ID, result.Error
+	return result.Error
 }
 
-func (r Repo) UpdateFirstSettleDate(ctx context.Context, tx *gorm.DB, id int64, trxDate time.Time) error {
-	result := tx.WithContext(ctx).Model(&Settlement{ID: id}).Updates(&Settlement{FirstTrxTime: trxDate})
+func (r Repo) UpdateFirstSettleDate(ctx context.Context, tx *gorm.DB, settltementID string, trxDate time.Time) error {
+	result := tx.WithContext(ctx).Model(&Settlement{}).
+		Where("settlement_id = ?", settltementID).Updates(&Settlement{FirstTrxTime: trxDate})
 
 	return result.Error
 }

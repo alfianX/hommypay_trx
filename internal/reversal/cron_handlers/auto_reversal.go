@@ -28,7 +28,7 @@ func (cs *CronService) AutoReversal() {
 				if row.IsoRequest != "" {
 					isoReqEnc = row.IsoRequest
 
-					_, issuerConnType, _, issuerService, err := cs.issuerService.GetUrlByIssuerID(context.Background(), row.IssuerID) 
+					_, issuerConnType, _, issuerService, err := cs.issuerService.GetUrlByIssuerID(context.Background(), row.IssuerID)
 					if err != nil {
 						h.ErrorLog("Cron AR -> Get url service: " + err.Error())
 						continue
@@ -38,12 +38,11 @@ func (cs *CronService) AutoReversal() {
 						h.ErrorLog("Cron AR -> Issuer connection type not found!")
 						continue
 					}
-				
+
 					if issuerService == "" {
 						h.ErrorLog("Cron AR -> Issuer service not found!")
 						continue
 					}
-
 
 					ip, port, err := cs.hsmConfigService.GetHSMIpPort(context.Background())
 					if err != nil {
@@ -72,7 +71,7 @@ func (cs *CronService) AutoReversal() {
 							continue
 						}
 						isoReq = isoReq[:lenIsoReq]
-						
+
 						DE := iso.Parse(isoReq[14:])
 
 						delete(DE, 35)
@@ -93,7 +92,7 @@ func (cs *CronService) AutoReversal() {
 
 									repeatCount := row.RepeatCount + 1
 
-									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.TransactionID, repeatCount)
 									if err != nil {
 										h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 										continue
@@ -114,9 +113,9 @@ func (cs *CronService) AutoReversal() {
 							h.ErrorLog("Cron AR -> ISO encrypt: " + err.Error())
 							continue
 						}
-					}else if issuerConnType == 2 {
+					} else if issuerConnType == 2 {
 						var resp *http.Response
-						
+
 						type send struct {
 							TransactionID string `json:"transactionID"`
 						}
@@ -146,7 +145,7 @@ func (cs *CronService) AutoReversal() {
 						resp, err = client.Do(exReq)
 
 						if err != nil {
-							if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
+							if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout") {
 								if row.RepeatCount < 3 {
 									err := cs.transactionService.UpdateTOReversalFlag(context.Background(), row.TransactionID)
 									if err != nil {
@@ -156,7 +155,7 @@ func (cs *CronService) AutoReversal() {
 
 									repeatCount := row.RepeatCount + 1
 
-									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.ID, repeatCount)
+									err = cs.reversalService.UpdateBackFlagReversal(context.Background(), row.TransactionID, repeatCount)
 									if err != nil {
 										h.ErrorLog("Cron AR -> Update back reversal flag: " + err.Error())
 										continue
@@ -183,7 +182,7 @@ func (cs *CronService) AutoReversal() {
 
 						responseCode = extResp["responseCode"].(string)
 					}
-					
+
 					if responseCode == "00" {
 						err := cs.transactionService.UpdateReversalFlag(context.Background(), row.TransactionID)
 						if err != nil {
@@ -193,35 +192,35 @@ func (cs *CronService) AutoReversal() {
 					}
 
 					err = cs.reversalService.UpdateDataReversal(context.Background(), reversals.UpdateDataReversalParams{
-						ID: row.ID,
-						ResponseCode: responseCode,
-						IsoResponse: isoResEnc,
+						TransactionID: row.TransactionID,
+						ResponseCode:  responseCode,
+						IsoResponse:   isoResEnc,
 					})
 					if err != nil {
 						h.ErrorLog("Cron AR -> Update reversal: " + err.Error())
 						continue
 					}
 
-					err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.ID)
+					err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.TransactionID)
 					if err != nil {
 						h.ErrorLog("Cron AR -> Save reversal log: " + err.Error())
 						continue
 					}
 
-					err = cs.reversalService.DeleteReversal(context.Background(), row.ID)
+					err = cs.reversalService.DeleteReversal(context.Background(), row.TransactionID)
 					if err != nil {
 						h.ErrorLog("Cron AR -> Delete reversal data: " + err.Error())
 						continue
 					}
 				}
-			}else{
-				err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.ID)
+			} else {
+				err = cs.reversalService.CreateAutoReversalLog(context.Background(), row.TransactionID)
 				if err != nil {
 					h.ErrorLog("Cron AR -> Save reversal log: " + err.Error())
 					continue
 				}
 
-				err = cs.reversalService.DeleteReversal(context.Background(), row.ID)
+				err = cs.reversalService.DeleteReversal(context.Background(), row.TransactionID)
 				if err != nil {
 					h.ErrorLog("Cron AR -> Delete reversal data: " + err.Error())
 					continue

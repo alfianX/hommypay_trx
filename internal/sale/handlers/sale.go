@@ -21,7 +21,7 @@ import (
 )
 
 func (s service) Sale(c *gin.Context) {
-	
+
 	type send struct {
 		TransactionID      string `json:"transactionID" binding:"required"`
 		IssuerID           int64  `json:"issuerID" binding:"required"`
@@ -38,7 +38,7 @@ func (s service) Sale(c *gin.Context) {
 			KSN             string `json:"ksn"`
 		} `json:"paymentInformation" binding:"required"`
 		CardInformation struct {
-			AID		   string `json:"aid" binding:"required"`
+			AID        string `json:"aid" binding:"required"`
 			PAN        string `json:"pan" binding:"required"`
 			Expiry     string `json:"expiry" `
 			CardType   string `json:"cardType" binding:"required"`
@@ -47,9 +47,9 @@ func (s service) Sale(c *gin.Context) {
 			PinBlock   string `json:"pinBlock"`
 		} `json:"cardInformation" binding:"required"`
 		PosTerminal struct {
-			TransMode 	string `json:"transMode" binding:"required"`
-			Code    	string `json:"code" binding:"required"`
-			KeyMode 	int    `json:"keyMode" binding:"required"`
+			TransMode string `json:"transMode" binding:"required"`
+			Code      string `json:"code" binding:"required"`
+			KeyMode   int    `json:"keyMode" binding:"required"`
 		} `json:"posTerminal"`
 	}
 
@@ -60,22 +60,22 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	type responseISO struct {
-		Status             string `json:"status"`
-		ResponseCode       string `json:"responseCode"`
-		Message			   string `json:"message"`
-		TransactionID 	   string `json:"transactionID"`
-		ApprovalCode       string `json:"approvalCode"`
-		Signature	  string `json:"signature"`
-		ISO8583 string `json:"ISO8583"`
+		Status        string `json:"status"`
+		ResponseCode  string `json:"responseCode"`
+		Message       string `json:"message"`
+		TransactionID string `json:"transactionID"`
+		ApprovalCode  string `json:"approvalCode"`
+		Signature     string `json:"signature"`
+		ISO8583       string `json:"ISO8583"`
 	}
 
 	type response struct {
-		Status             string `json:"status"`
-		ResponseCode       string `json:"responseCode"`
-		Message			   string `json:"message"`
-		TransactionID 	   string `json:"transactionID"`
-		ApprovalCode  	   string `json:"approvalCode"`
-		Signature	  string `json:"signature"`
+		Status        string `json:"status"`
+		ResponseCode  string `json:"responseCode"`
+		Message       string `json:"message"`
+		TransactionID string `json:"transactionID"`
+		ApprovalCode  string `json:"approvalCode"`
+		Signature     string `json:"signature"`
 	}
 
 	req := types.SaleRequest{}
@@ -88,9 +88,9 @@ func (s service) Sale(c *gin.Context) {
 		if errors.As(err, &ve) {
 			out := make([]h.ErrorMsg, len(ve))
 			for i, fe := range ve {
-                out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
-            }
-			
+				out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
+			}
+
 			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
 		}
@@ -289,14 +289,14 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	countTrx, err := s.transactionService.CheckData(c, transactions.CheckDataTrxParams{
-		Procode: procode,
-		TID: tid,
-		MID: mid,
-		Amount: amount,
+		Procode:         procode,
+		TID:             tid,
+		MID:             mid,
+		Amount:          amount,
 		TransactionDate: trxDate,
-		STAN: stan,
-		Trace: trace,
-		Batch: bacth,
+		STAN:            stan,
+		Trace:           trace,
+		Batch:           bacth,
 	})
 	if err != nil {
 		h.ErrorLog("Check data trx: " + err.Error())
@@ -310,8 +310,8 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	countStan, err := s.transactionService.CheckStan(c, transactions.CheckStanParams{
-		TID: tid,
-		MID: mid,
+		TID:  tid,
+		MID:  mid,
 		STAN: stan,
 	})
 	if err != nil {
@@ -359,13 +359,13 @@ func (s service) Sale(c *gin.Context) {
 
 	if responseFds == "2" {
 		err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
-			Mid: mid,
-			Tid: tid,
-			Trace: trace,
-			Pan: panMask,
-			Date: transactionDate,
+			Mid:    mid,
+			Tid:    tid,
+			Trace:  trace,
+			Pan:    panMask,
+			Date:   transactionDate,
 			Status: msgFds,
-			Data: detailMsgFds,
+			Data:   detailMsgFds,
 		})
 		if err != nil {
 			h.ErrorLog("Create suspect list: " + err.Error())
@@ -392,7 +392,7 @@ func (s service) Sale(c *gin.Context) {
 
 	if appName == "NSICCS" {
 		cardType = "DEBIT"
-	}else{
+	} else {
 		cardType = "CREDIT"
 	}
 
@@ -433,33 +433,33 @@ func (s service) Sale(c *gin.Context) {
 	transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
 	trxParams := transactions.CreateTrxParams{
-		TransactionID: transactionID,
-		Procode: req.PaymentInformation.Procode,
-		Mid: req.PaymentInformation.MID,
-		Tid: req.PaymentInformation.TID,
-		CardType: cardType,
-		Pan: panMask,
-		PanEnc: req.CardInformation.PAN,
-		TrackData: req.CardInformation.TrackData2,
-		EMVTag: req.CardInformation.EMVTag,
-		Amount: req.PaymentInformation.Amount,
+		TransactionID:   transactionID,
+		Procode:         req.PaymentInformation.Procode,
+		Mid:             req.PaymentInformation.MID,
+		Tid:             req.PaymentInformation.TID,
+		CardType:        cardType,
+		Pan:             panMask,
+		PanEnc:          req.CardInformation.PAN,
+		TrackData:       req.CardInformation.TrackData2,
+		EMVTag:          req.CardInformation.EMVTag,
+		Amount:          req.PaymentInformation.Amount,
 		TransactionDate: trxDate,
-		Stan: req.PaymentInformation.STAN,
-		Trace: req.PaymentInformation.Trace,
-		Batch: req.PaymentInformation.Batch,
-		TransMode: req.PosTerminal.TransMode,
-		BankCode: bankCode,
-		IsoRequest: req.ISO8583,
-		IssuerID: issuerID,
-		Longitude: long,
-		Latitude: lat,
+		Stan:            req.PaymentInformation.STAN,
+		Trace:           req.PaymentInformation.Trace,
+		Batch:           req.PaymentInformation.Batch,
+		TransMode:       req.PosTerminal.TransMode,
+		BankCode:        bankCode,
+		IsoRequest:      req.ISO8583,
+		IssuerID:        issuerID,
+		Longitude:       long,
+		Latitude:        lat,
 	}
-	id, err := s.transactionService.CreateSaleTrx(c, trxParams)
+	err = s.transactionService.CreateSaleTrx(c, trxParams)
 	if err != nil {
 		h.ErrorLog("Save trx: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
-	}	
+	}
 
 	dataToSend := send{}
 	dataToSend.TransactionID = transactionID
@@ -486,7 +486,7 @@ func (s service) Sale(c *gin.Context) {
 
 	payload, err := json.Marshal(dataToSend)
 	if err != nil {
-		s.transactionService.UpdateTrx(c, id, "E1")
+		s.transactionService.UpdateTrx(c, transactionID, "E1")
 		h.ErrorLog("JSON marshal data send: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -503,33 +503,33 @@ func (s service) Sale(c *gin.Context) {
 			h.IssuerLog(logMessage, issuerName)
 
 			extResp, err = h.TcpSendToIssuer(c, s.config, ISO8583, issuerService)
-			
-		}else{
-			s.transactionService.UpdateTrx(c, id, "I2")
+
+		} else {
+			s.transactionService.UpdateTrx(c, transactionID, "I2")
 			h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I2", Message: "ISO8583 empty!"}, http.StatusBadRequest)
 			return
 		}
-	}else if issuerConnType == 2 {
+	} else if issuerConnType == 2 {
 		logMessage := fmt.Sprintf("[%s] - Request: %s", timeString, dataRequest)
 		h.IssuerLog(logMessage, issuerName)
 
 		extResp, err = h.RestSendToIssuer(c, s.config, payload, issuerService)
 	}
- 
+
 	if err != nil {
-		if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout"){
+		if strings.Contains(err.Error(), "Timeout") || strings.Contains(err.Error(), "timeout") {
 			errRvrsl := s.AutoReversal(c, transactionID, "")
 			if errRvrsl != nil {
-				s.transactionService.UpdateTrx(c, id, "E1")
+				s.transactionService.UpdateTrx(c, transactionID, "E1")
 				h.ErrorLog("Save data reversal: " + errRvrsl.Error())
 				h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 				return
 			}
-			s.transactionService.UpdateTrx(c, id, "T0")
+			s.transactionService.UpdateTrx(c, transactionID, "T0")
 			h.Respond(c, responseError{Status: "TIMEOUT", ResponseCode: "T0", Message: "request timeout"}, http.StatusConflict)
 			return
-		}else{
-			s.transactionService.UpdateTrx(c, id, "E0")
+		} else {
+			s.transactionService.UpdateTrx(c, transactionID, "E0")
 			h.ErrorLog("Send to microservice: " + err.Error())
 			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E0", Message: "Link down!"}, http.StatusConflict)
 			return
@@ -552,7 +552,7 @@ func (s service) Sale(c *gin.Context) {
 		ISO8583Res = extResp["ISO8583"].(string)
 		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
 		if err != nil {
-			s.transactionService.UpdateTrx(c, id, "E1")
+			s.transactionService.UpdateTrx(c, transactionID, "E1")
 			h.ErrorLog("ISO res encrypt: " + err.Error())
 			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 			return
@@ -562,7 +562,7 @@ func (s service) Sale(c *gin.Context) {
 
 	dataResponseByte, err := json.Marshal(extResp)
 	if err != nil {
-		s.transactionService.UpdateTrx(c, id, "E1")
+		s.transactionService.UpdateTrx(c, transactionID, "E1")
 		h.ErrorLog("Marshal response : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -574,39 +574,39 @@ func (s service) Sale(c *gin.Context) {
 	if issuerConnType == 1 {
 		logMessage := fmt.Sprintf("\n Response: %s\n", iso8583ResEnc)
 		h.IssuerLog(logMessage, issuerName)
-	}else if issuerConnType == 2 {
+	} else if issuerConnType == 2 {
 		logMessage := fmt.Sprintf("\n Response: %s\n", dataResponse)
 		h.IssuerLog(logMessage, issuerName)
 	}
-	
+
 	h.HistoryRespLog(dataResponseByte, dateString, timeString, "sale")
-	
+
 	email, err := s.terminalService.GetEmailMerchant(c, req.PaymentInformation.TID, req.PaymentInformation.MID)
 	if err != nil {
-		s.transactionService.UpdateTrx(c, id, "E1")
+		s.transactionService.UpdateTrx(c, transactionID, "E1")
 		h.ErrorLog("Get email merchant : " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
-	
+
 	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.TransactionDate, req.PaymentInformation.Trace, approvalCode)
 	if err != nil {
-		s.transactionService.UpdateTrx(c, id, "E1")
+		s.transactionService.UpdateTrx(c, transactionID, "E1")
 		h.ErrorLog("Create signature: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
 
 	err = s.transactionService.UpdateSaleTrx(c, transactions.UpdateSaleParams{
-		ID: id,
-		ResponseCode: responseCode,
+		TransactionID:   transactionID,
+		ResponseCode:    responseCode,
 		ISO8583Response: iso8583ResEnc,
-		ApprovalCode: approvalCode,
-		Signature: signatureFinal,
+		ApprovalCode:    approvalCode,
+		Signature:       signatureFinal,
 	})
 
 	if err != nil {
-		s.transactionService.UpdateTrx(c, id, "E1")
+		s.transactionService.UpdateTrx(c, transactionID, "E1")
 		h.ErrorLog("Update trx: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
@@ -652,19 +652,19 @@ func (s service) AutoReversal(c *gin.Context, trxId string, rcOrg string) error 
 	}
 
 	err = s.reversalService.SaveDataReversal(c, reversals.SaveDataReversalParams{
-		TransactionID: trxId,
+		TransactionID:   trxId,
 		TransactionType: data.TransactionType,
-		Procode: data.Procode,
-		Mid: data.Mid,
-		Tid: data.Tid,
-		Amount: data.Amount,
+		Procode:         data.Procode,
+		Mid:             data.Mid,
+		Tid:             data.Tid,
+		Amount:          data.Amount,
 		TransactionDate: data.TransactionDate,
-		Stan: data.Stan,
-		StanIssuer: data.StanIssuer,
-		Trace: data.Trace,
-		Batch: data.Batch,
-		IsoRequest: data.IsoRequest,
-		IssuerID: data.IssuerID,
+		Stan:            data.Stan,
+		StanIssuer:      data.StanIssuer,
+		Trace:           data.Trace,
+		Batch:           data.Batch,
+		IsoRequest:      data.IsoRequest,
+		IssuerID:        data.IssuerID,
 	})
 
 	return err

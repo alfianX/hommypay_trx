@@ -29,7 +29,7 @@ func (s service) Logon(c *gin.Context) {
 	type response struct {
 		Status       string `json:"status"`
 		ResponseCode string `json:"responseCode"`
-		Message		 string `json:"message"`
+		Message      string `json:"message"`
 		Key          string `json:"key"`
 	}
 

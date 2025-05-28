@@ -52,7 +52,7 @@ func NewServer() (*Server, error) {
 		AllowCredentials: true,
 	}))
 	RegisterRoutes(router, log, databaseParam)
-	
+
 	s := Server{
 		logger: log,
 		config: cnf,

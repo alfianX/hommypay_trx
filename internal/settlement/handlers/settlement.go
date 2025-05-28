@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	uniqueid "github.com/albinj12/unique-id"
@@ -17,6 +18,10 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type contextKey string
+
+const RouteKey contextKey = "current_route"
+
 func (s service) Settlement(c *gin.Context) {
 	type responseError struct {
 		Status       string `json:"status"`
@@ -25,12 +30,14 @@ func (s service) Settlement(c *gin.Context) {
 	}
 
 	type response struct {
-		Status             string `json:"status"`
-		ResponseCode       string `json:"responseCode"`
-		Message			   string `json:"message"`
-		RefNo  	   		   string `json:"refNo"`
-		Signature	  	   string `json:"signature"`
+		Status       string `json:"status"`
+		ResponseCode string `json:"responseCode"`
+		Message      string `json:"message"`
+		RefNo        string `json:"refNo"`
+		Signature    string `json:"signature"`
 	}
+
+	c.Set("current_route", "settlement")
 
 	req := types.SettlementRequest{}
 
@@ -42,9 +49,9 @@ func (s service) Settlement(c *gin.Context) {
 		if errors.As(err, &ve) {
 			out := make([]h.ErrorMsg, len(ve))
 			for i, fe := range ve {
-                out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
-            }
-			
+				out[i] = h.ErrorMsg{Field: fe.Field(), Message: h.GetErrorMsg(fe)}
+			}
+
 			// h.ErrorLog(err.Error())
 			h.Respond(c, gin.H{"status": "INVALID_REQUEST", "ResponseCode": "I0", "Message": out}, http.StatusBadRequest)
 			return
@@ -76,8 +83,8 @@ func (s service) Settlement(c *gin.Context) {
 	}
 
 	countSettle, err := s.transactionService.CheckDataSettle(c, transactions.CheckDataSettleParams{
-		TID: tid,
-		MID: mid,
+		TID:   tid,
+		MID:   mid,
 		Batch: batch,
 	})
 	if err != nil {
@@ -88,13 +95,13 @@ func (s service) Settlement(c *gin.Context) {
 
 	if countSettle == 0 {
 		responseOK := response{
-			Status: "SUCCESS",
+			Status:       "SUCCESS",
 			ResponseCode: "00",
-			Message: "Approved",
-			RefNo: "",
-			Signature: "",
+			Message:      "Approved",
+			RefNo:        "",
+			Signature:    "",
 		}
-	
+
 		h.Respond(c, responseOK, http.StatusOK)
 		return
 	}
@@ -178,7 +185,7 @@ func (s service) Settlement(c *gin.Context) {
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
-	
+
 	signatureFinal, err := h.CreateSignature(req.PaymentInformation.TID, req.PaymentInformation.MID, email, req.PaymentInformation.SettleDate, req.PaymentInformation.Trace, refNo)
 	if err != nil {
 		h.ErrorLog("Create signature: " + err.Error())
@@ -193,26 +200,31 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	id, err := s.settlementService.CreateSettle(c, tx, settementType, settlement.CreateSettleParams{
-		MID: mid,
-		TID: tid,
-		STAN: stan,
-		Trace: trace,
-		Batch: batch,
-		RefNo: refNo,
-		SettleDate: settleDate,
+	dateTimeFormat := "20060102150405"
+	dateTimeString := currentTime.Format(dateTimeFormat)
+	settlementID := "STL" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
+
+	err = s.settlementService.CreateSettle(c, tx, settementType, settlement.CreateSettleParams{
+		SettlementID:     settlementID,
+		MID:              mid,
+		TID:              tid,
+		STAN:             stan,
+		Trace:            trace,
+		Batch:            batch,
+		RefNo:            refNo,
+		SettleDate:       settleDate,
 		TotalTransaction: totalTransaction,
-		TotalAmount: totalAmount,
-		SaleCount: saleCountDB,
-		SaleAmount: saleAmountDB,
-		VoidCount: voidCountDB,
-		VoidAmount: voidAmountDB,
-		PosSaleCount: saleCount,
-		PosSaleAmount: saleAmount,
-		PosVoidCount: voidCount,
-		PosVoidAmount: voidAmount,
-		Signature: signatureFinal,
-		ProcessSettle: processSettle,
+		TotalAmount:      totalAmount,
+		SaleCount:        saleCountDB,
+		SaleAmount:       saleAmountDB,
+		VoidCount:        voidCountDB,
+		VoidAmount:       voidAmountDB,
+		PosSaleCount:     saleCount,
+		PosSaleAmount:    saleAmount,
+		PosVoidCount:     voidCount,
+		PosVoidAmount:    voidAmount,
+		Signature:        signatureFinal,
+		ProcessSettle:    processSettle,
 	})
 	if err != nil {
 		tx.Rollback()
@@ -231,7 +243,7 @@ func (s service) Settlement(c *gin.Context) {
 	i := 1
 	for _, data := range dataTrx {
 		if i == 1 {
-			err = s.settlementService.UpdateFirstSettleDate(c, tx, id, data.TransactionDate)
+			err = s.settlementService.UpdateFirstSettleDate(c, tx, settlementID, data.TransactionDate)
 			if err != nil {
 				tx.Rollback()
 				h.ErrorLog("Update first settle date: " + err.Error())
@@ -242,19 +254,19 @@ func (s service) Settlement(c *gin.Context) {
 
 		if settementType == "END" && data.BatchUFlag == 1 {
 			err := s.reversalService.SaveDataReversalSettle(c, reversals.SaveDataReversalParams{
-				TransactionID: data.TransactionID,
+				TransactionID:   data.TransactionID,
 				TransactionType: data.TransactionType,
-				Procode: data.Procode,
-				Mid: data.Mid,
-				Tid: data.Tid,
-				Amount: data.Amount,
+				Procode:         data.Procode,
+				Mid:             data.Mid,
+				Tid:             data.Tid,
+				Amount:          data.Amount,
 				TransactionDate: data.TransactionDate,
-				Stan: data.Stan,
-				StanIssuer: data.StanIssuer,
-				Trace: data.Trace,
-				Batch: data.Batch,
-				IsoRequest: data.IsoRequest,
-				IssuerID: data.IssuerID,
+				Stan:            data.Stan,
+				StanIssuer:      data.StanIssuer,
+				Trace:           data.Trace,
+				Batch:           data.Batch,
+				IsoRequest:      data.IsoRequest,
+				IssuerID:        data.IssuerID,
 				ResponseCodeOrg: data.ResponseCode,
 			})
 
@@ -267,42 +279,42 @@ func (s service) Settlement(c *gin.Context) {
 		}
 
 		err = s.settementDetailService.CreateSettleDetail(c, tx, settementType, settlementdetails.CreateSettleDetailParams{
-			SettlementID: id,
-			TransactionID: data.TransactionID,
-			TransactionType: data.TransactionType,
-			Procode: data.Procode,
-			MID: data.Mid,
-			TID: data.Tid,
-			CardType: data.CardType,
-			PAN: data.Pan,
-			PANEnc: data.PanEnc,
-			TrackData: data.TrackData,
-			EMVTag: data.EmvTag,
-			Amount: data.Amount,
-			TransactionDate: data.TransactionDate,
-			STAN: data.Stan,
-			STANIssuer: data.StanIssuer,
-			Rrn: data.Rrn,
-			Trace: data.Trace,
-			Batch: data.Batch,
-			TransMode: data.TransMode,
-			BankCode: data.BankCode,
-			ISO8583Request: data.IsoRequest,
-			ISO8583RequestIssuer: data.IsoRequestIssuer,
-			ResponseCode: data.ResponseCode,
-			ResponseAt: data.ResponseAt,
-			ApprovalCode: data.ApprovalCode,
-			RefID: data.ReffID,
-			DE32: data.DE32,
-			DE33: data.DE33,
-			DE123: data.DE123,
-			ISO8583Response: data.IsoResponse,
+			SettlementID:          settlementID,
+			TransactionID:         data.TransactionID,
+			TransactionType:       data.TransactionType,
+			Procode:               data.Procode,
+			MID:                   data.Mid,
+			TID:                   data.Tid,
+			CardType:              data.CardType,
+			PAN:                   data.Pan,
+			PANEnc:                data.PanEnc,
+			TrackData:             data.TrackData,
+			EMVTag:                data.EmvTag,
+			Amount:                data.Amount,
+			TransactionDate:       data.TransactionDate,
+			STAN:                  data.Stan,
+			STANIssuer:            data.StanIssuer,
+			Rrn:                   data.Rrn,
+			Trace:                 data.Trace,
+			Batch:                 data.Batch,
+			TransMode:             data.TransMode,
+			BankCode:              data.BankCode,
+			ISO8583Request:        data.IsoRequest,
+			ISO8583RequestIssuer:  data.IsoRequestIssuer,
+			ResponseCode:          data.ResponseCode,
+			ResponseAt:            data.ResponseAt,
+			ApprovalCode:          data.ApprovalCode,
+			RefID:                 data.ReffID,
+			DE32:                  data.DE32,
+			DE33:                  data.DE33,
+			DE123:                 data.DE123,
+			ISO8583Response:       data.IsoResponse,
 			ISO8583ResponseIssuer: data.IsoResponseIssuer,
-			IssuerID: data.IssuerID,
-			Signature: data.Signature,
-			VoidID: data.VoidID,
-			BatchUFlag: data.BatchUFlag,
-			CutOff: data.SettledDate,
+			IssuerID:              data.IssuerID,
+			Signature:             data.Signature,
+			VoidID:                data.VoidID,
+			BatchUFlag:            data.BatchUFlag,
+			CutOff:                data.SettledDate,
 		})
 		if err != nil {
 			tx.Rollback()
@@ -362,11 +374,11 @@ func (s service) Settlement(c *gin.Context) {
 	}
 
 	responseOK := response{
-		Status: "SUCCESS",
+		Status:       "SUCCESS",
 		ResponseCode: "00",
-		Message: "Approved",
-		RefNo: refNo,
-		Signature: signatureFinal,
+		Message:      "Approved",
+		RefNo:        refNo,
+		Signature:    signatureFinal,
 	}
 
 	dataResponseByte, err := json.Marshal(responseOK)

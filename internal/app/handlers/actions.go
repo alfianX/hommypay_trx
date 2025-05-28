@@ -32,11 +32,11 @@ func (s service) Actions(c *gin.Context) {
 	}
 
 	headerMap := make(map[string]string)
-    for key, values := range c.Request.Header {
-        if len(values) > 0 {
-            headerMap[key] = values[0]
-        }
-    }
+	for key, values := range c.Request.Header {
+		if len(values) > 0 {
+			headerMap[key] = values[0]
+		}
+	}
 
 	client := resty.New()
 	response, err := client.R().
