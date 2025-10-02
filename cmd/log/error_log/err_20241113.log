@@ -1,7 +1,0 @@
-[09:16:36] - Key: 'SaleRequest.PaymentInformation.Batch' Error:Field validation for 'Batch' failed on the 'min' tag
-Key: 'SaleRequest.CardInformation.TrackData2' Error:Field validation for 'TrackData2' failed on the 'required' tag
-
-[09:19:17] - Send to microservice: Response: Value '[33 chars]' is invalid. Invalid character 'D'
-
-[09:22:00] - request timeout
-

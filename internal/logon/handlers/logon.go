@@ -69,15 +69,6 @@ func (s service) Logon(c *gin.Context) {
 		return
 	}
 
-	// re := regexp.MustCompile(`\r?\n`)
-	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	// currentTime := time.Now()
-	// gmtFormat := "15:04:05"
-	// dateString := currentTime.Format(gmtFormat)
-	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", dateString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	// h.HistoryLog(logMessage, "logon")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "logon")
 
 	count, err := s.terminalService.CheckTidMid(c, req.DeviceInformation.TID, req.DeviceInformation.MID)
@@ -126,6 +117,8 @@ func (s service) Logon(c *gin.Context) {
 	}
 	twk := string(resByte[11:43])
 	tpk := string(resByte[43:76])
+	defer h.NullifyBytes([]byte(twk))
+	defer h.NullifyBytes([]byte(tpk))
 
 	err = s.terminalKeysService.SaveTPK(c, req.DeviceInformation.TID, tpk)
 	if err != nil {
@@ -140,6 +133,7 @@ func (s service) Logon(c *gin.Context) {
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
+	defer h.NullifyBytes([]byte(keyEnc))
 
 	resp := response{}
 	resp.Status = "SUCCESS"
@@ -154,11 +148,6 @@ func (s service) Logon(c *gin.Context) {
 		return
 	}
 
-	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
-
-	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	// h.HistoryLog(logMessage, "logon")
 	h.HistoryRespLog(dataResponseByte, dateString, timeString, "logon")
 
 	resp.Key = hex.EncodeToString([]byte(twk))

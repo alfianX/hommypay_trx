@@ -11,6 +11,7 @@ import (
 	keyconfig "github.com/alfianX/hommypay_trx/databases/param/key_config"
 	responsecodereversal "github.com/alfianX/hommypay_trx/databases/param/response_code_reversal"
 	responsecodetrx "github.com/alfianX/hommypay_trx/databases/param/response_code_trx"
+	routefds "github.com/alfianX/hommypay_trx/databases/param/route_fds"
 	suspectlist "github.com/alfianX/hommypay_trx/databases/param/suspect_list"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
@@ -35,6 +36,7 @@ type service struct {
 	acqConfigService   acqconfig.Service
 	rcTrxService       responsecodetrx.Service
 	rcReversalService  responsecodereversal.Service
+	routefdsService    routefds.Service
 }
 
 func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *gorm.DB, dbParam *gorm.DB, dbMerchant *gorm.DB) service {
@@ -54,5 +56,6 @@ func NewHandler(lg *logrus.Logger, rtr *gin.Engine, cnf configs.Config, dbTrx *g
 		acqConfigService:   acqconfig.NewService(acqconfig.NewRepo(dbParam)),
 		rcTrxService:       responsecodetrx.NewService(responsecodetrx.NewRepo(dbParam)),
 		rcReversalService:  responsecodereversal.NewService(responsecodereversal.NewRepo(dbParam)),
+		routefdsService:    routefds.NewService(routefds.NewRepo(dbParam)),
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	h "github.com/alfianX/hommypay_trx/helper"
+	"github.com/alfianX/hommypay_trx/pkg/iso"
 	"github.com/alfianX/hommypay_trx/types"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -116,14 +117,19 @@ func (s service) Void(c *gin.Context) {
 	transactionDate := req.PaymentInformation.TransactionDate
 	var ksn string
 	pan := req.CardInformation.PAN
+	defer h.NullifyBytes([]byte(pan))
 	expiry := req.CardInformation.Expiry
+	defer h.NullifyBytes([]byte(expiry))
 	trackData2 := req.CardInformation.TrackData2
+	defer h.NullifyBytes([]byte(trackData2))
 	emvTag := req.CardInformation.EMVTag
+	defer h.NullifyBytes([]byte(emvTag))
 	var pinBlock string
 	transMode := req.PosTerminal.TransMode
 	code := req.PosTerminal.Code
 	keyMode := req.PosTerminal.KeyMode
 	ISO8583 := req.ISO8583
+	defer h.NullifyBytes([]byte(ISO8583))
 	panMask := h.MaskPan(pan)
 	var issuerID int64
 	var issuerName string
@@ -133,12 +139,10 @@ func (s service) Void(c *gin.Context) {
 	var lat string
 	var long string
 	var panEnc string
-	var expiryEnc string
-	var trackData2Enc string
 	var emvTagEnc string
-	var pinBlockEnc string
 	var iso8583Enc string
 	var bankCode string
+	var ipAddress string
 
 	if c.GetHeader("X-LATITUDE") != "" {
 		lat = c.GetHeader("X-LATITUDE")
@@ -146,6 +150,13 @@ func (s service) Void(c *gin.Context) {
 
 	if c.GetHeader("X-LONGITUDE") != "" {
 		long = c.GetHeader("X-LONGITUDE")
+	}
+
+	if c.GetHeader("X-IPADDRESS") != "" {
+		ipAddress = c.GetHeader("X-IPADDRESS")
+	} else {
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "H1", Message: "X-IPADDRESS required!"}, http.StatusBadRequest)
+		return
 	}
 
 	if code == "02" {
@@ -185,30 +196,6 @@ func (s service) Void(c *gin.Context) {
 		}
 		req.CardInformation.PAN = panEnc
 	}
-
-	if expiry != "" {
-		expiryToEnc := strings.ReplaceAll(expiry, "/", "")
-		expiryEnc, err = h.HSMEncrypt(ip+":"+port, zek, expiryToEnc)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
-			h.ErrorLog("Expiry encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.Expiry = expiryEnc
-	}
-
-	if trackData2 != "" {
-		trackData2Enc, err = h.HSMEncrypt(ip+":"+port, zek, trackData2)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
-			h.ErrorLog("Trackdata2 encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.TrackData2 = trackData2Enc
-	}
-
 	if emvTag != "" {
 		emvTagEnc, err = h.HSMEncrypt(ip+":"+port, zek, emvTag)
 		if err != nil {
@@ -218,17 +205,6 @@ func (s service) Void(c *gin.Context) {
 			return
 		}
 		req.CardInformation.EMVTag = emvTagEnc
-	}
-
-	if pinBlock != "" {
-		pinBlockEnc, err = h.HSMEncrypt(ip+":"+port, zek, pinBlock)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "void")
-			h.ErrorLog("Pin block encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.PinBlock = pinBlockEnc
 	}
 
 	if ISO8583 != "" {
@@ -320,6 +296,13 @@ func (s service) Void(c *gin.Context) {
 	dateTimeString := currentTime.Format(dateTimeFormat)
 	transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
+	var DE43 string
+	DE := iso.Parse(ISO8583[14:])
+
+	if DE[43] != "" {
+		DE43 = DE[43]
+	}
+
 	trxParams := transactions.CreateTrxParams{
 		TransactionID:   transactionID,
 		Procode:         req.PaymentInformation.Procode,
@@ -328,7 +311,6 @@ func (s service) Void(c *gin.Context) {
 		CardType:        cardType,
 		Pan:             panMask,
 		PanEnc:          req.CardInformation.PAN,
-		TrackData:       req.CardInformation.TrackData2,
 		EMVTag:          req.CardInformation.EMVTag,
 		Amount:          req.PaymentInformation.Amount,
 		TransactionDate: trxDate,
@@ -337,10 +319,12 @@ func (s service) Void(c *gin.Context) {
 		Batch:           req.PaymentInformation.Batch,
 		TransMode:       req.PosTerminal.TransMode,
 		BankCode:        bankCode,
+		DE43:            DE43,
 		IsoRequest:      req.ISO8583,
 		IssuerID:        issuerID,
 		Longitude:       long,
 		Latitude:        lat,
+		IpAddress:       ipAddress,
 	}
 	err = s.transactionService.CreateVoidTrx(c, trxParams)
 	if err != nil {
@@ -383,7 +367,6 @@ func (s service) Void(c *gin.Context) {
 	var extResp map[string]interface{}
 	var ISO8583Res string
 	var dataResponse string
-	var iso8583ResEnc string
 
 	if issuerConnType == 1 {
 		if ISO8583 != "" {
@@ -439,14 +422,7 @@ func (s service) Void(c *gin.Context) {
 
 	if extResp["ISO8583"] != nil {
 		ISO8583Res = extResp["ISO8583"].(string)
-		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
-		if err != nil {
-			s.transactionService.UpdateTrx(c, transactionID, "E1")
-			h.ErrorLog("ISO res encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		extResp["ISO8583"] = iso8583ResEnc
+		defer h.NullifyBytes([]byte(ISO8583Res))
 	}
 
 	dataResponseByte, err := json.Marshal(extResp)
@@ -461,7 +437,7 @@ func (s service) Void(c *gin.Context) {
 	dataResponse = strings.ReplaceAll(dataResponse, " ", "")
 
 	if issuerConnType == 1 {
-		logMessage := fmt.Sprintf("\n Response: %s\n", iso8583ResEnc)
+		logMessage := fmt.Sprintf("\n Response: %s\n", "")
 		h.IssuerLog(logMessage, issuerName)
 	} else if issuerConnType == 2 {
 		logMessage := fmt.Sprintf("\n Response: %s\n", dataResponse)
@@ -487,12 +463,11 @@ func (s service) Void(c *gin.Context) {
 	}
 
 	err = s.transactionService.UpdateVoidTrx(c, transactions.UpdateVoidParams{
-		TransactionID:   transactionID,
-		ResponseCode:    responseCode,
-		ISO8583Response: iso8583Enc,
-		ApprovalCode:    approvalCode,
-		Signature:       signatureFinal,
-		SaleID:          data.TransactionID,
+		TransactionID: transactionID,
+		ResponseCode:  responseCode,
+		ApprovalCode:  approvalCode,
+		Signature:     signatureFinal,
+		SaleID:        data.TransactionID,
 	})
 
 	if err != nil {

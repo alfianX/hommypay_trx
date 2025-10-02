@@ -11,6 +11,7 @@ import (
 
 	"github.com/alfianX/hommypay_trx/pkg/round_robin"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -84,7 +85,7 @@ func Connect(cfg ConfigDB) (*gorm.DB, error) {
 		cfg.Name,
 	)
 
-	logDir := "../log/query_log"
+	logDir := os.Getenv("LOG_QUERY")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		log.Fatal(err)
 	}

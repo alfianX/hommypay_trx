@@ -76,12 +76,6 @@ func (s service) BatchUpload(c *gin.Context) {
 		return
 	}
 
-	// re := regexp.MustCompile(`\r?\n`)
-	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	// h.HistoryLog(logMessage, "batch_upload")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "batch_upload")
 
 	trxID, err := s.transactionService.CheckBatchDataTrx(c, transactions.CheckDataTrxParams{
@@ -125,11 +119,6 @@ func (s service) BatchUpload(c *gin.Context) {
 		return
 	}
 
-	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
-
-	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	// h.HistoryLog(logMessage, "batch_upload")
 	h.HistoryRespLog(dataResponseByte, dateString, timeString, "batch_upload")
 
 	h.Respond(c, responseOK, http.StatusOK)

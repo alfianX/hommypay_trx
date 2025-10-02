@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -111,7 +112,7 @@ func TcpSendToIssuer(c *gin.Context, cnf configs.Config, payload string, issuerS
 func FdsCheck(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress string) (string, string, string, error) {
 	type responseFds struct {
 		Result struct {
-			Response string `json:"response"`
+			Response int    `json:"response"`
 			Message  string `json:"message"`
 		} `json:"result"`
 		Data string `json:"data"`
@@ -147,5 +148,7 @@ func FdsCheck(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress str
 		return "", "", "", errors.New("Decode response fds: " + err.Error())
 	}
 
-	return response.Result.Response, response.Result.Message, response.Data, nil
+	responseResult := strconv.Itoa(response.Result.Response)
+
+	return responseResult, response.Result.Message, response.Data, nil
 }

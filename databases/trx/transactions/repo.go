@@ -49,7 +49,6 @@ func (r Repo) CreateTrx(ctx context.Context, entity *Transactions) error {
 		"card_type",
 		"pan",
 		"pan_enc",
-		"track_data",
 		"emv_tag",
 		"amount",
 		"transaction_date",
@@ -58,12 +57,14 @@ func (r Repo) CreateTrx(ctx context.Context, entity *Transactions) error {
 		"batch",
 		"trans_mode",
 		"bank_code",
+		"DE43",
 		"iso_request",
 		"issuer_id",
 		"status",
 		"longitude",
 		"latitude",
 		"created_at",
+		"ip_address",
 	).Create(&entity)
 
 	return result.Error
@@ -74,7 +75,6 @@ func (r Repo) UpdateTrx(ctx context.Context, entity *Transactions) error {
 		Where("transaction_id = ?", entity.TransactionID).Updates(&Transactions{
 		ResponseCode: entity.ResponseCode,
 		ResponseAt:   time.Now(),
-		IsoResponse:  entity.IsoResponse,
 		ApprovalCode: entity.ApprovalCode,
 		Signature:    entity.Signature,
 		Status:       2,

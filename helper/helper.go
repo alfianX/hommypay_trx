@@ -48,22 +48,22 @@ func Respond(c *gin.Context, data interface{}, status int) {
 }
 
 type ErrorMsg struct {
-    Field string `json:"field"`
-    Message   string `json:"message"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 func GetErrorMsg(fe validator.FieldError) string {
-    switch fe.Tag() {
-        case "required":
-            return "This field is required"
-        case "min":
-            return "Min is " + fe.Param()
-        case "max":
-            return "Max is " + fe.Param()
-		case "numeric":
-			return "Should be numeric"
-    }
-    return "Unknown error"
+	switch fe.Tag() {
+	case "required":
+		return "This field is required"
+	case "min":
+		return "Min is " + fe.Param()
+	case "max":
+		return "Max is " + fe.Param()
+	case "numeric":
+		return "Should be numeric"
+	}
+	return "Unknown error"
 }
 
 func Decode(c *gin.Context, v interface{}) error {
@@ -153,7 +153,7 @@ func SendMessageToHsm(IPPORT, message string) (string, error) {
 	conn.Close()
 
 	messageHost := hex.EncodeToString(received[:bytesRead])
-	
+
 	return messageHost, nil
 }
 
@@ -181,7 +181,7 @@ func HSMEncrypt(IPPORT string, zek string, data string) (string, error) {
 		} else {
 			lenDataHex = strings.ToUpper(fmt.Sprintf("%04x", lenData))
 		}
-		
+
 		command := "RSWIM0001100A" + zek + lenDataHex + data
 		len := len(command)
 		lenHex := strings.ToUpper(fmt.Sprintf("%04x", len))
@@ -202,8 +202,8 @@ func HSMEncrypt(IPPORT string, zek string, data string) (string, error) {
 			return "", errors.New("HSM response invalid")
 		}
 
-		return lenDataHexT+string(resByte[14:]), nil
-	}else{
+		return lenDataHexT + string(resByte[14:]), nil
+	} else {
 		return "", errors.New("no data")
 	}
 }
@@ -211,7 +211,7 @@ func HSMEncrypt(IPPORT string, zek string, data string) (string, error) {
 func HSMDecrypt(IPPORT string, zek string, data string) (string, error) {
 	var lenDataHex string
 	lenData := len(data)
-	if lenData > 0 {	
+	if lenData > 0 {
 		lenDataHex = strings.ToUpper(fmt.Sprintf("%04x", lenData))
 		command := "RSWIM2001100A" + zek + lenDataHex + data
 		len := len(command)
@@ -234,7 +234,7 @@ func HSMDecrypt(IPPORT string, zek string, data string) (string, error) {
 		}
 
 		return string(resByte[14:]), nil
-	}else{
+	} else {
 		return "", nil
 	}
 }
@@ -245,7 +245,7 @@ func CreateSignature(tid, mid, email, transactionDate, trace, approvalCode strin
 	if err != nil {
 		return "", err
 	}
-    pemStr := string(pem)
+	pemStr := string(pem)
 	privateKey, err := rsa.ParseRsaPrivateKeyFromPemStr(pemStr)
 	if err != nil {
 		return "", err
@@ -263,8 +263,14 @@ func CreateSignature(tid, mid, email, transactionDate, trace, approvalCode strin
 	if err != nil {
 		return "", err
 	}
-	
+
 	signatureFinal := base64.StdEncoding.EncodeToString(signature)
 
 	return signatureFinal, nil
+}
+
+func NullifyBytes(data []byte) {
+	for i := range data {
+		data[i] = 0
+	}
 }

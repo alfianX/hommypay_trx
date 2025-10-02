@@ -1,4 +1,0 @@
-[14:17:02] - Fds check: Send fds: Post "http://localhost:90/fds_rm/apiFDS.php": dial tcp [::1]:90: connectex: No connection could be made because the target machine actively refused it.
-
-[14:21:35] - Save log trx: Error 1292 (22007): Incorrect datetime value: '1' for column 'logged_at' at row 1
-

@@ -71,6 +71,7 @@ func (cs *CronService) AutoReversal() {
 							continue
 						}
 						isoReq = isoReq[:lenIsoReq]
+						defer h.NullifyBytes([]byte(isoReq))
 
 						DE := iso.Parse(isoReq[14:])
 
@@ -79,6 +80,7 @@ func (cs *CronService) AutoReversal() {
 						delete(DE, 55)
 
 						isoReversal := iso.CreateIso(DE, "6000190000", "0400", "1")
+						defer h.NullifyBytes([]byte(isoReversal))
 
 						ret, res := h.SendHost(issuerService, isoReversal, cs.config.TimeoutTrx)
 						if ret != 0 {
@@ -113,6 +115,7 @@ func (cs *CronService) AutoReversal() {
 							h.ErrorLog("Cron AR -> ISO encrypt: " + err.Error())
 							continue
 						}
+						defer h.NullifyBytes([]byte(isoResEnc))
 					} else if issuerConnType == 2 {
 						var resp *http.Response
 

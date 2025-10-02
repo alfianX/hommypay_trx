@@ -119,15 +119,6 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	// re := regexp.MustCompile(`\r?\n`)
-	// dataRequest := re.ReplaceAllString(string(dataRequestByte), "")
-	// dataRequest = strings.ReplaceAll(dataRequest, " ", "")
-
-	// currentTime := time.Now()
-	// gmtFormat := "15:04:05"
-	// timeString := currentTime.Format(gmtFormat)
-	// logMessage := fmt.Sprintf("[%s] - path:%s, method: %s,\n requestBody: %v", timeString, c.Request.URL.EscapedPath(), c.Request.Method, dataRequest)
-	// h.HistoryLog(logMessage, "settlement")
 	h.HistoryReqLog(c, dataRequestByte, dateString, timeString, "settlement")
 
 	totalTransactionDB, totalAmountDB, err := s.transactionService.GetSettleTotal(c, mid, tid, batch, settementType)
@@ -279,42 +270,38 @@ func (s service) Settlement(c *gin.Context) {
 		}
 
 		err = s.settementDetailService.CreateSettleDetail(c, tx, settementType, settlementdetails.CreateSettleDetailParams{
-			SettlementID:          settlementID,
-			TransactionID:         data.TransactionID,
-			TransactionType:       data.TransactionType,
-			Procode:               data.Procode,
-			MID:                   data.Mid,
-			TID:                   data.Tid,
-			CardType:              data.CardType,
-			PAN:                   data.Pan,
-			PANEnc:                data.PanEnc,
-			TrackData:             data.TrackData,
-			EMVTag:                data.EmvTag,
-			Amount:                data.Amount,
-			TransactionDate:       data.TransactionDate,
-			STAN:                  data.Stan,
-			STANIssuer:            data.StanIssuer,
-			Rrn:                   data.Rrn,
-			Trace:                 data.Trace,
-			Batch:                 data.Batch,
-			TransMode:             data.TransMode,
-			BankCode:              data.BankCode,
-			ISO8583Request:        data.IsoRequest,
-			ISO8583RequestIssuer:  data.IsoRequestIssuer,
-			ResponseCode:          data.ResponseCode,
-			ResponseAt:            data.ResponseAt,
-			ApprovalCode:          data.ApprovalCode,
-			RefID:                 data.ReffID,
-			DE32:                  data.DE32,
-			DE33:                  data.DE33,
-			DE123:                 data.DE123,
-			ISO8583Response:       data.IsoResponse,
-			ISO8583ResponseIssuer: data.IsoResponseIssuer,
-			IssuerID:              data.IssuerID,
-			Signature:             data.Signature,
-			VoidID:                data.VoidID,
-			BatchUFlag:            data.BatchUFlag,
-			CutOff:                data.SettledDate,
+			SettlementID:    settlementID,
+			TransactionID:   data.TransactionID,
+			TransactionType: data.TransactionType,
+			Procode:         data.Procode,
+			MID:             data.Mid,
+			TID:             data.Tid,
+			CardType:        data.CardType,
+			PAN:             data.Pan,
+			PANEnc:          data.PanEnc,
+			EMVTag:          data.EmvTag,
+			Amount:          data.Amount,
+			TransactionDate: data.TransactionDate,
+			STAN:            data.Stan,
+			STANIssuer:      data.StanIssuer,
+			Rrn:             data.Rrn,
+			Trace:           data.Trace,
+			Batch:           data.Batch,
+			TransMode:       data.TransMode,
+			BankCode:        data.BankCode,
+			DE43:            data.DE43,
+			ResponseCode:    data.ResponseCode,
+			ResponseAt:      data.ResponseAt,
+			ApprovalCode:    data.ApprovalCode,
+			RefID:           data.ReffID,
+			DE32:            data.DE32,
+			DE33:            data.DE33,
+			DE123:           data.DE123,
+			IssuerID:        data.IssuerID,
+			Signature:       data.Signature,
+			VoidID:          data.VoidID,
+			BatchUFlag:      data.BatchUFlag,
+			CutOff:          data.SettledDate,
 		})
 		if err != nil {
 			tx.Rollback()
@@ -388,11 +375,6 @@ func (s service) Settlement(c *gin.Context) {
 		return
 	}
 
-	// dataResponse := re.ReplaceAllString(string(dataResponseByte), "")
-	// dataResponse = strings.ReplaceAll(dataResponse, " ", "")
-
-	// logMessage = fmt.Sprintf("\n respondStatus: %d, respondBody: %s\n", http.StatusOK, dataResponse)
-	// h.HistoryLog(logMessage, "settlement")
 	h.HistoryRespLog(dataResponseByte, dateString, timeString, "settlement")
 
 	h.Respond(c, responseOK, http.StatusOK)

@@ -26,6 +26,7 @@ func (cs *CronService) SafReversal() {
 			var isoReqEnc string
 			if row.IsoRequest != "" {
 				isoReqEnc = row.IsoRequest
+				defer h.NullifyBytes([]byte(isoReqEnc))
 
 				_, issuerConnType, _, issuerService, err := cs.issuerService.GetUrlByIssuerID(context.Background(), row.IssuerID)
 				if err != nil {
@@ -106,6 +107,7 @@ func (cs *CronService) SafReversal() {
 						h.ErrorLog("Cron AR -> ISO encrypt: " + err.Error())
 						continue
 					}
+					defer h.NullifyBytes([]byte(isoResEnc))
 				} else if issuerConnType == 2 {
 					var resp *http.Response
 

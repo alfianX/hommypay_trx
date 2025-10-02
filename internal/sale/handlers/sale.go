@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,17 +9,26 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/alfianX/hommypay_trx/configs"
 	suspectlist "github.com/alfianX/hommypay_trx/databases/param/suspect_list"
 	"github.com/alfianX/hommypay_trx/databases/trx/reversals"
 	"github.com/alfianX/hommypay_trx/databases/trx/transactions"
 	h "github.com/alfianX/hommypay_trx/helper"
+	"github.com/alfianX/hommypay_trx/pkg/iso"
 	"github.com/alfianX/hommypay_trx/pkg/round_robin"
 	"github.com/alfianX/hommypay_trx/types"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
+
+type APIResult struct {
+	Name    string
+	Message string
+	Status  int // 0 for success, 1 for failure
+}
 
 func (s service) Sale(c *gin.Context) {
 
@@ -125,14 +135,19 @@ func (s service) Sale(c *gin.Context) {
 	var ksn string
 	aid := req.CardInformation.AID
 	pan := req.CardInformation.PAN
+	defer h.NullifyBytes([]byte(pan))
 	expiry := req.CardInformation.Expiry
+	defer h.NullifyBytes([]byte(expiry))
 	trackData2 := req.CardInformation.TrackData2
+	defer h.NullifyBytes([]byte(trackData2))
 	emvTag := req.CardInformation.EMVTag
+	defer h.NullifyBytes([]byte(emvTag))
 	var pinBlock string
 	transMode := req.PosTerminal.TransMode
 	code := req.PosTerminal.Code
 	keyMode := req.PosTerminal.KeyMode
 	ISO8583 := req.ISO8583
+	defer h.NullifyBytes([]byte(ISO8583))
 	panMask := h.MaskPan(pan)
 	var issuerID int64
 	var issuerName string
@@ -142,13 +157,11 @@ func (s service) Sale(c *gin.Context) {
 	var lat string
 	var long string
 	var panEnc string
-	var expiryEnc string
-	var trackData2Enc string
 	var emvTagEnc string
-	var pinBlockEnc string
 	var iso8583Enc string
 	var appName string
 	var bankCode string
+	var ipAddress string
 
 	if c.GetHeader("X-LATITUDE") != "" {
 		lat = c.GetHeader("X-LATITUDE")
@@ -156,6 +169,13 @@ func (s service) Sale(c *gin.Context) {
 
 	if c.GetHeader("X-LONGITUDE") != "" {
 		long = c.GetHeader("X-LONGITUDE")
+	}
+
+	if c.GetHeader("X-Ipaddress") != "" {
+		ipAddress = c.GetHeader("X-Ipaddress")
+	} else {
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "H1", Message: "X-Ipaddress required!"}, http.StatusBadRequest)
+		return
 	}
 
 	if code == "02" {
@@ -210,29 +230,6 @@ func (s service) Sale(c *gin.Context) {
 		req.CardInformation.PAN = panEnc
 	}
 
-	if expiry != "" {
-		expiryToEnc := strings.ReplaceAll(expiry, "/", "")
-		expiryEnc, err = h.HSMEncrypt(ip+":"+port, zek, expiryToEnc)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "sale")
-			h.ErrorLog("Expiry encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.Expiry = expiryEnc
-	}
-
-	if trackData2 != "" {
-		trackData2Enc, err = h.HSMEncrypt(ip+":"+port, zek, trackData2)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "sale")
-			h.ErrorLog("Trackdata2 encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.TrackData2 = trackData2Enc
-	}
-
 	if emvTag != "" {
 		emvTagEnc, err = h.HSMEncrypt(ip+":"+port, zek, emvTag)
 		if err != nil {
@@ -242,17 +239,6 @@ func (s service) Sale(c *gin.Context) {
 			return
 		}
 		req.CardInformation.EMVTag = emvTagEnc
-	}
-
-	if pinBlock != "" {
-		pinBlockEnc, err = h.HSMEncrypt(ip+":"+port, zek, pinBlock)
-		if err != nil {
-			h.HistoryReqLog(c, dataRequestLogByte, dateString, timeString, "sale")
-			h.ErrorLog("Pin block encrypt: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
-		}
-		req.CardInformation.PinBlock = pinBlockEnc
 	}
 
 	if ISO8583 != "" {
@@ -325,9 +311,18 @@ func (s service) Sale(c *gin.Context) {
 		return
 	}
 
-	fdsAddress, err := s.fdsConfigService.GetFdsAddress(c)
+	fdsAddressReject, err := s.routefdsService.GetUrlFdsReject(c)
+	// fdsAddress, err := s.fdsConfigService.GetFdsAddress(c)
 	if err != nil {
-		h.ErrorLog("Get fds address: " + err.Error())
+		h.ErrorLog("Get fds address rejected: " + err.Error())
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+		return
+	}
+
+	fdsAddressSuspect, err := s.routefdsService.GetUrlFdsSuspect(c)
+	// fdsAddress, err := s.fdsConfigService.GetFdsAddress(c)
+	if err != nil {
+		h.ErrorLog("Get fds address suspect: " + err.Error())
 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
 		return
 	}
@@ -339,40 +334,148 @@ func (s service) Sale(c *gin.Context) {
 		return
 	}
 
-	responseFds, msgFds, detailMsgFds, err := h.FdsCheck(c, s.config, payloadFds, fdsAddress)
-	if err != nil {
-		h.ErrorLog("Fds check: " + err.Error())
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+	resultsCh := make(chan APIResult)
+
+	// WaitGroup untuk menunggu semua goroutine selesai sebelum menutup channel
+	var wg sync.WaitGroup
+
+	wg.Add(len(fdsAddressReject))
+	for _, api := range fdsAddressReject {
+		go FdsAPIHit(c, s.config, payloadFds, api.Url, resultsCh, &wg)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
+
+	// responseFds, msgFds, detailMsgFds, err := h.FdsCheck(c, s.config, payloadFds, fdsAddress)
+	// if err != nil {
+	// 	h.ErrorLog("Fds check: " + err.Error())
+	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+	// 	return
+	// }
+
+	successCount := 0
+	messageFds := ""
+	for result := range resultsCh {
+		if result.Status != 0 {
+			messageFds = result.Message
+			break
+		}
+		successCount++
+	}
+
+	if successCount != len(fdsAddressReject) {
+		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I5", Message: messageFds}, http.StatusBadRequest)
 		return
 	}
 
-	if responseFds == "1" {
-		h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "I5", Message: detailMsgFds}, http.StatusBadRequest)
-		return
+	resultsCh = make(chan APIResult)
+
+	var wgS sync.WaitGroup
+
+	wgS.Add(len(fdsAddressSuspect))
+	for _, api := range fdsAddressSuspect {
+		go FdsAPIHit(c, s.config, payloadFds, api.Url, resultsCh, &wgS)
 	}
 
-	if responseFds == "3" || responseFds == "4" {
-		h.ErrorLog("Fds response: " + msgFds + ", " + detailMsgFds)
-		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
-		return
-	}
+	go func() {
+		wgS.Wait()
+		close(resultsCh)
+	}()
 
-	if responseFds == "2" {
-		err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
-			Mid:    mid,
-			Tid:    tid,
-			Trace:  trace,
-			Pan:    panMask,
-			Date:   transactionDate,
-			Status: msgFds,
-			Data:   detailMsgFds,
-		})
-		if err != nil {
-			h.ErrorLog("Create suspect list: " + err.Error())
-			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
-			return
+	errorFds := false
+	messageFds = ""
+	for result := range resultsCh {
+		if result.Status == 99 {
+			errorFds = true
+			messageFds = result.Message
+			break
 		}
 	}
+
+	if errorFds {
+		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "I6", Message: messageFds}, http.StatusInternalServerError)
+		return
+	}
+
+	// if responseFds == "3" || responseFds == "4" {
+	// 	h.ErrorLog("Fds response: " + msgFds + ", " + detailMsgFds)
+	// 	h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusBadRequest)
+	// 	return
+	// }
+
+	// if responseFds == "2" {
+	// 	err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
+	// 		Mid:    mid,
+	// 		Tid:    tid,
+	// 		Trace:  trace,
+	// 		Pan:    panMask,
+	// 		Date:   transactionDate,
+	// 		Status: msgFds,
+	// 		Data:   detailMsgFds,
+	// 	})
+	// 	if err != nil {
+	// 		h.ErrorLog("Create suspect list: " + err.Error())
+	// 		h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+	// 		return
+	// 	}
+	// }
+
+	// if strings.Contains(trackData2, "D") {
+	// 	trckD := strings.Split(trackData2, "D")
+	// 	expDate := trckD[1][:4]
+	// 	if expDate != "" {
+	// 		if len(expDate) == 4 {
+	// 			yyStr := expDate[0:2]
+	// 			mmStr := expDate[2:4]
+
+	// 			yy, _ := strconv.Atoi(yyStr)
+
+	// 			mm, _ := strconv.Atoi(mmStr)
+
+	// 			currentYear := time.Now().Year()
+	// 			yy = (currentYear/100)*100 + yy
+
+	// 			now := time.Now()
+	// 			nowYear := now.Year()
+	// 			nowMonth := int(now.Month())
+
+	// 			ok := true
+	// 			if yy < nowYear {
+	// 				ok = false
+	// 			}
+
+	// 			if yy == nowYear {
+	// 				// Jika bulan kedaluwarsa lebih besar atau sama dengan bulan sekarang, maka belum kedaluwarsa
+	// 				if mm < nowMonth {
+	// 					ok = false
+	// 				}
+	// 			}
+
+	// 			if !ok {
+	// 				err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
+	// 					Mid:    mid,
+	// 					Tid:    tid,
+	// 					Trace:  trace,
+	// 					Pan:    panMask,
+	// 					Date:   transactionDate,
+	// 					Status: "Rejected",
+	// 					Data:   "Expired Card",
+	// 				})
+	// 				if err != nil {
+	// 					h.ErrorLog("Create suspect list: " + err.Error())
+	// 					h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+	// 					return
+	// 				}
+
+	// 				h.Respond(c, responseError{Status: "INVALID_REQUEST", ResponseCode: "54", Message: "Expired Card"}, http.StatusBadRequest)
+	// 				return
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	if aid != "" {
 		appName, err = s.aidService.GetAppName(c, aid)
@@ -432,6 +535,13 @@ func (s service) Sale(c *gin.Context) {
 	dateTimeString := currentTime.Format(dateTimeFormat)
 	transactionID := "TRX" + dateTimeString + strconv.Itoa(time.Now().Nanosecond())[2:5]
 
+	var DE43 string
+	DE := iso.Parse(ISO8583[14:])
+
+	if DE[43] != "" {
+		DE43 = DE[43]
+	}
+
 	trxParams := transactions.CreateTrxParams{
 		TransactionID:   transactionID,
 		Procode:         req.PaymentInformation.Procode,
@@ -440,7 +550,6 @@ func (s service) Sale(c *gin.Context) {
 		CardType:        cardType,
 		Pan:             panMask,
 		PanEnc:          req.CardInformation.PAN,
-		TrackData:       req.CardInformation.TrackData2,
 		EMVTag:          req.CardInformation.EMVTag,
 		Amount:          req.PaymentInformation.Amount,
 		TransactionDate: trxDate,
@@ -449,10 +558,12 @@ func (s service) Sale(c *gin.Context) {
 		Batch:           req.PaymentInformation.Batch,
 		TransMode:       req.PosTerminal.TransMode,
 		BankCode:        bankCode,
+		DE43:            DE43,
 		IsoRequest:      req.ISO8583,
 		IssuerID:        issuerID,
 		Longitude:       long,
 		Latitude:        lat,
+		IpAddress:       ipAddress,
 	}
 	err = s.transactionService.CreateSaleTrx(c, trxParams)
 	if err != nil {
@@ -540,6 +651,22 @@ func (s service) Sale(c *gin.Context) {
 	if extResp["responseCode"] != nil {
 		responseCode = extResp["responseCode"].(string)
 	}
+	if responseCode == "54" {
+		err := s.suspectListService.CreateSuspect(c, suspectlist.CreateSuspectParams{
+			Mid:    mid,
+			Tid:    tid,
+			Trace:  trace,
+			Pan:    panMask,
+			Date:   transactionDate,
+			Status: "Rejected",
+			Data:   "Expired Card",
+		})
+		if err != nil {
+			h.ErrorLog("Create suspect list: " + err.Error())
+			h.Respond(c, responseError{Status: "SERVER_FAILED", ResponseCode: "E1", Message: "Service Acq Malfunction"}, http.StatusConflict)
+			return
+		}
+	}
 	var message string
 	if extResp["message"] != nil {
 		message = extResp["message"].(string)
@@ -550,6 +677,7 @@ func (s service) Sale(c *gin.Context) {
 	}
 	if extResp["ISO8583"] != nil {
 		ISO8583Res = extResp["ISO8583"].(string)
+		defer h.NullifyBytes([]byte(ISO8583Res))
 		iso8583ResEnc, err = h.HSMEncrypt(ip+":"+port, zek, ISO8583Res)
 		if err != nil {
 			s.transactionService.UpdateTrx(c, transactionID, "E1")
@@ -598,11 +726,10 @@ func (s service) Sale(c *gin.Context) {
 	}
 
 	err = s.transactionService.UpdateSaleTrx(c, transactions.UpdateSaleParams{
-		TransactionID:   transactionID,
-		ResponseCode:    responseCode,
-		ISO8583Response: iso8583ResEnc,
-		ApprovalCode:    approvalCode,
-		Signature:       signatureFinal,
+		TransactionID: transactionID,
+		ResponseCode:  responseCode,
+		ApprovalCode:  approvalCode,
+		Signature:     signatureFinal,
 	})
 
 	if err != nil {
@@ -668,4 +795,72 @@ func (s service) AutoReversal(c *gin.Context, trxId string, rcOrg string) error 
 	})
 
 	return err
+}
+
+func FdsAPIHit(c *gin.Context, cnf configs.Config, payload []byte, fdsAddress string, ch chan<- APIResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	status := 0
+	type responseFds struct {
+		Result struct {
+			Response int    `json:"response"`
+			Message  string `json:"message"`
+		} `json:"result"`
+		Data string `json:"data"`
+	}
+
+	var response responseFds
+	var resp *http.Response
+
+	exReq, err := http.NewRequest("POST", fdsAddress, bytes.NewReader(payload))
+	if err != nil {
+		h.ErrorLog("Fds API hit -> Prepare send to fds service: " + err.Error())
+		status = 99
+		result := APIResult{Name: fdsAddress, Message: "error prepare send to fds", Status: status}
+		ch <- result
+		return
+	}
+
+	exReq.Header = c.Request.Header
+
+	client := &http.Client{
+		Timeout: time.Duration(cnf.TimeoutTrx) * time.Second,
+	}
+	resp, err = client.Do(exReq)
+
+	if err != nil {
+		h.ErrorLog("Fds API hit -> Send fds: " + err.Error())
+		status = 99
+		result := APIResult{Name: fdsAddress, Message: "error send to fds", Status: status}
+		ch <- result
+		return
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		h.ErrorLog("Fds API hit -> Response fds error")
+		status = 99
+		result := APIResult{Name: fdsAddress, Message: "error response fds", Status: status}
+		ch <- result
+		return
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		h.ErrorLog("Fds API hit -> Decode response fds: " + err.Error())
+		status = 99
+		result := APIResult{Name: fdsAddress, Message: "error decode response fds", Status: status}
+		ch <- result
+		return
+	}
+
+	status = response.Result.Response
+	message := response.Data
+
+	result := APIResult{Name: fdsAddress, Message: message, Status: status}
+
+	// Kirim hasil ke channel
+	ch <- result
+	fmt.Printf("DONE: API %s finished with status %d\n", fdsAddress, status)
 }

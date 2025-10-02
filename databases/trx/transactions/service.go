@@ -25,7 +25,6 @@ type CreateTrxParams struct {
 	CardType        string
 	Pan             string
 	PanEnc          string
-	TrackData       string
 	EMVTag          string
 	Amount          int64
 	TransactionDate time.Time
@@ -34,27 +33,27 @@ type CreateTrxParams struct {
 	Batch           string
 	TransMode       string
 	BankCode        string
+	DE43            string
 	IsoRequest      string
 	IssuerID        int64
 	Longitude       string
 	Latitude        string
+	IpAddress       string
 }
 
 type UpdateSaleParams struct {
-	TransactionID   string
-	ResponseCode    string
-	ISO8583Response string
-	ApprovalCode    string
-	Signature       string
+	TransactionID string
+	ResponseCode  string
+	ApprovalCode  string
+	Signature     string
 }
 
 type UpdateVoidParams struct {
-	TransactionID   string
-	ResponseCode    string
-	ISO8583Response string
-	ApprovalCode    string
-	Signature       string
-	SaleID          string
+	TransactionID string
+	ResponseCode  string
+	ApprovalCode  string
+	Signature     string
+	SaleID        string
 }
 
 type CheckDataTrxParams struct {
@@ -130,7 +129,6 @@ func (s Service) CreateSaleTrx(ctx context.Context, params CreateTrxParams) erro
 		CardType:        params.CardType,
 		Pan:             params.Pan,
 		PanEnc:          params.PanEnc,
-		TrackData:       params.TrackData,
 		EmvTag:          params.EMVTag,
 		Amount:          params.Amount,
 		TransactionDate: params.TransactionDate,
@@ -139,12 +137,14 @@ func (s Service) CreateSaleTrx(ctx context.Context, params CreateTrxParams) erro
 		Batch:           params.Batch,
 		TransMode:       params.TransMode,
 		BankCode:        params.BankCode,
+		DE43:            params.DE43,
 		IsoRequest:      params.IsoRequest,
 		IssuerID:        params.IssuerID,
 		Status:          1,
 		Longitude:       params.Longitude,
 		Latitude:        params.Latitude,
 		CreatedAt:       time.Now(),
+		IpAddress:       params.IpAddress,
 	}
 
 	err := s.repo.CreateTrx(ctx, &entity)
@@ -165,7 +165,6 @@ func (s Service) CreateReversalTrx(ctx context.Context, params CreateTrxParams) 
 		CardType:        params.CardType,
 		Pan:             params.Pan,
 		PanEnc:          params.PanEnc,
-		TrackData:       params.TrackData,
 		EmvTag:          params.EMVTag,
 		Amount:          params.Amount,
 		TransactionDate: params.TransactionDate,
@@ -174,12 +173,14 @@ func (s Service) CreateReversalTrx(ctx context.Context, params CreateTrxParams) 
 		Batch:           params.Batch,
 		TransMode:       params.TransMode,
 		BankCode:        params.BankCode,
+		DE43:            params.DE43,
 		IsoRequest:      params.IsoRequest,
 		IssuerID:        params.IssuerID,
 		Status:          1,
 		Longitude:       params.Longitude,
 		Latitude:        params.Latitude,
 		CreatedAt:       time.Now(),
+		IpAddress:       params.IpAddress,
 	}
 
 	err := s.repo.CreateTrx(ctx, &entity)
@@ -200,7 +201,6 @@ func (s Service) CreateVoidTrx(ctx context.Context, params CreateTrxParams) erro
 		CardType:        params.CardType,
 		Pan:             params.Pan,
 		PanEnc:          params.PanEnc,
-		TrackData:       params.TrackData,
 		EmvTag:          params.EMVTag,
 		Amount:          params.Amount,
 		TransactionDate: params.TransactionDate,
@@ -209,12 +209,14 @@ func (s Service) CreateVoidTrx(ctx context.Context, params CreateTrxParams) erro
 		Batch:           params.Batch,
 		TransMode:       params.TransMode,
 		BankCode:        params.BankCode,
+		DE43:            params.DE43,
 		IsoRequest:      params.IsoRequest,
 		IssuerID:        params.IssuerID,
 		Status:          1,
 		Longitude:       params.Longitude,
 		Latitude:        params.Latitude,
 		CreatedAt:       time.Now(),
+		IpAddress:       params.IpAddress,
 	}
 
 	err := s.repo.CreateTrx(ctx, &entity)
@@ -230,7 +232,6 @@ func (s Service) UpdateSaleTrx(ctx context.Context, params UpdateSaleParams) err
 	entity := Transactions{
 		TransactionID: params.TransactionID,
 		ResponseCode:  params.ResponseCode,
-		IsoResponse:   params.ISO8583Response,
 		ApprovalCode:  params.ApprovalCode,
 		Signature:     params.Signature,
 	}
@@ -248,7 +249,6 @@ func (s Service) UpdateReversalTrx(ctx context.Context, params UpdateSaleParams)
 	entity := Transactions{
 		TransactionID: params.TransactionID,
 		ResponseCode:  params.ResponseCode,
-		IsoResponse:   params.ISO8583Response,
 		ApprovalCode:  params.ApprovalCode,
 	}
 
@@ -268,7 +268,6 @@ func (s Service) UpdateVoidTrx(ctx context.Context, params UpdateVoidParams) err
 	entity := Transactions{
 		TransactionID: params.TransactionID,
 		ResponseCode:  params.ResponseCode,
-		IsoResponse:   params.ISO8583Response,
 		ApprovalCode:  params.ApprovalCode,
 		Signature:     params.Signature,
 	}
